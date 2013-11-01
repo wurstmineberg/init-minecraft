@@ -14,7 +14,11 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.11.0'
+__version__ = '2.11.1'
+
+import sys
+
+sys.path.append('/opt/py')
 
 from datetime import date
 from datetime import datetime
@@ -30,7 +34,6 @@ import re
 import shlex
 import socket
 import subprocess
-import sys
 import time
 
 MCHOME = '/opt/wurstmineberg'
