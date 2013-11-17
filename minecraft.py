@@ -109,9 +109,9 @@ def backup(announce=False):
     print('Compressing backup...')
     subprocess.call(['gzip', '-f', backup_file])
     print('Symlinking to httpdocs...')
-    if os.path.exists(BACKUPWEB):
+    if os.path.lexists(BACKUPWEB):
         os.unlink(BACKUPWEB)
-    os.symlink(backup_file + '.gz', BACKUPWEB)
+    os.symlink(backup_file + '.gz', link_name=BACKUPWEB)
     print('Done.')
 
 def command(cmd, args=[], block=False, subst=True):
