@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.11.1'
+__version__ = '2.11.2'
 
 import sys
 
@@ -198,10 +198,12 @@ def log(reverse=False):
                 else:
                     yield None, None, line.rstrip('\r\n')
 
-def online_players():
+def online_players(retry=True):
     found = False
     list = command('list')
     if list is None:
+        if retry:
+            return online_players(retry=False)
         return []
     for line in list.splitlines():
         if found:
@@ -210,6 +212,8 @@ def online_players():
                 return [] if match.group(1) is None else match.group(1).split(', ')
         found = bool(re.match(regexes.timestamp + ' \\[Server thread/INFO\\]: There are [0-9]+/[0-9]+ players online:' , line))
     # no player list in return
+    if retry:
+        return online_players(retry=False)
     return []
 
 def restart(*args, **kwargs):
