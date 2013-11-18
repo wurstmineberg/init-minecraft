@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.11.2'
+__version__ = '2.11.3'
 
 import sys
 
@@ -126,7 +126,7 @@ def command(cmd, args=[], block=False, subst=True):
     with open(os.path.join(MCPATH, 'logs', 'latest.log')) as logfile:
         pre_log_len = file_len(logfile)
         #print('DEBUG] pre-command log length: ' + str(pre_log_len)) #DEBUG
-    cmd += (' ' + ' '.join(args)) if len(args) else ''
+    cmd += (' ' + ' '.join(str(arg) for arg in args)) if len(args) else ''
     with socket.socket(socket.AF_UNIX) as s:
         s.connect(SOCKPATH)
         s.sendall(cmd.encode('utf-8') + b'\n')
@@ -139,7 +139,7 @@ def command(cmd, args=[], block=False, subst=True):
 
 def last_seen(player):
     for timestamp, _, logline in log(reverse=True):
-        match = re.match(player + ' left the game', logline)
+        match = re.match(re.escape(player) + ' left the game', logline)
         if match and (timestamp is not None):
             return timestamp
     return None
@@ -250,7 +250,7 @@ def say(message, prefix=True):
     if prefix:
         command('say', [message])
     else:
-        tellraw({'text': message})
+        tellraw(message)
 
 def start():
     def _start(timeout=0.1):
