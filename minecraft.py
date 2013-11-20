@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.11.3'
+__version__ = '2.11.4'
 
 import sys
 
@@ -217,13 +217,19 @@ def online_players(retry=True):
     return []
 
 def restart(*args, **kwargs):
-        stop()
-        for _ in range(6):
-            if status():
-                time.sleep(5)
-            else:
-                break
-        start()
+    reply = kwargs.get('reply', print)
+    stop(*args, **kwargs)
+    for _ in range(6):
+        if status():
+            time.sleep(5)
+            continue
+        else:
+            break
+    else:
+        reply('The server could not be stopped! D:')
+        return False
+    kwargs['start_message'] = 'Server stopped. Restarting...'
+    return start(*args, **kwargs)
 
 def saveoff(announce=True):
     if status():
@@ -252,7 +258,8 @@ def say(message, prefix=True):
     else:
         tellraw(message)
 
-def start():
+def start(*args, **kwargs):
+    reply = kwargs.get('reply', print)
     def _start(timeout=0.1):
         with open(os.path.devnull) as devnull:
             javapopen = subprocess.Popen(INVOCATION, stdin=subprocess.PIPE, stdout=devnull, cwd=MCPATH)
@@ -284,10 +291,10 @@ def start():
             os.remove(SOCKPATH)
     
     if status():
-        print(SERVICE + ' is already running!')
+        reply('Server is already running!')
         return False
     else:
-        print('starting ' + SERVICE + '...')
+        reply(kwargs.get('start_message', 'starting Minecraft server...'))
         _fork(_start)
         #subprocess.Popen('screen -dmS minecraft ' + INVOCATION, cwd=MCPATH, shell=True)
         time.sleep(7)
@@ -299,9 +306,9 @@ def status():
         return not subprocess.call(['pgrep', '-u', 'wurstmineberg', '-f', SERVICE], stdout=devnull)
 
 def stop(*args, **kwargs):
+    reply = kwargs.get('reply', print)
     if status():
-        print('Stopping ' + SERVICE)
-        say('SERVER SHUTTING DOWN IN 10 SECONDS. Saving map...')
+        reply('SERVER SHUTTING DOWN IN 10 SECONDS. Saving map...')
         command('save-all')
         time.sleep(10)
         command('stop')
@@ -309,7 +316,7 @@ def stop(*args, **kwargs):
         #with open(CMDPIPE, 'w') as cmdpipe:
         #    print('-break', file=cmdpipe)
     else:
-        print(SERVICE + ' was not running.')
+        reply('Minecraft server was not running.')
     update_status()
     return not status()
 
