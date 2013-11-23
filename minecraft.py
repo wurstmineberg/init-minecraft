@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.12.0'
+__version__ = '2.12.1'
 
 import sys
 
@@ -345,7 +345,7 @@ def update(version=None, snapshot=False, reply=print):
     version_text = 'Minecraft ' + ('snapshot ' if snapshot else 'version ') + version
     reply('Downloading ' + version_text)
     subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar'], cwd=JARDIR)
-    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', '-P', os.path.join(MCHOME, 'home', '.minecraft', 'versions', version))
+    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', '-P', os.path.join(MCHOME, 'home', '.minecraft', 'versions', version)])
     say('Server will be upgrading to ' + version_text + ' and therefore restart')
     time.sleep(5)
     stop(reply=reply)
