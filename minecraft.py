@@ -4,7 +4,7 @@
 
 Usage:
   minecraft start | stop | backup | status | restart
-  minecraft update (snapshot <snapshot-id> | VERSION)
+  minecraft update [snapshot <snapshot-id> | VERSION]
   minecraft command COMMAND...
   minecraft -h | --help
   minecraft --version
@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.11.4'
+__version__ = '2.12.0'
 
 import sys
 
@@ -31,6 +31,7 @@ import os
 import os.path
 import pty
 import re
+import requests
 import shlex
 import socket
 import subprocess
@@ -48,6 +49,7 @@ CPU_COUNT = 1
 MAXHEAP = 4096
 MINHEAP = 2048
 MCPATH = os.path.join(MCHOME, 'server')
+JARDIR = os.path.join(MCPATH, 'jar')
 OPTIONS = ['nogui']
 SERVICE = 'minecraft_server.jar'
 SOCKPATH = '/var/local/wurstmineberg/minecraft_commands.sock'
@@ -327,11 +329,34 @@ def tellraw(message_dict, player='@a'):
         message_dict = {'text': '', 'extra': message_dict}
     command('tellraw', [player, json.dumps(message_dict)])
 
-def update(version, snapshot=False):
-    if snapshot:
-        subprocess.call(['mcupdate', 'snapshot', version])
+def update(version=None, snapshot=False, reply=print):
+    versions_json = requests.get('https://s3.amazonaws.com/Minecraft.Download/versions/versions.json').json()
+    if version is None: # try to dynamically get the latest version number from assets
+        version = versions_json['latest']['snapshot' if snapshot else 'release']
+    elif snapshot:
+        version = datetime.utcnow().strftime("%yw%V") + version
+    for version_dict in versions_json['versions']:
+        if version_dict.get('id') == version:
+            snapshot = version_dict.get('type') == 'snapshot'
+            break
     else:
-        subprocess.call(['mcupdate', version])
+        reply('Minecraft version not found in assets, will try downloading anyway')
+        version_dict = None
+    version_text = 'Minecraft ' + ('snapshot ' if snapshot else 'version ') + version
+    reply('Downloading ' + version_text)
+    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar'], cwd=JARDIR)
+    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', '-P', os.path.join(MCHOME, 'home', '.minecraft', 'versions', version))
+    say('Server will be upgrading to ' + version_text + ' and therefore restart')
+    time.sleep(5)
+    stop(reply=reply)
+    if os.path.lexists(os.path.join(MCPATH, SERVICE)):
+        os.unlink(os.path.join(MCPATH, SERVICE))
+    os.symlink(os.path.join(JARDIR, 'minecraft_server.' + version + '.jar'), link_name=os.path.join(MCPATH, SERVICE))
+    if os.path.lexists(os.path.join(MCHOME, 'home', 'client.jar')):
+        os.unlink(os.path.join(MCHOME, 'home', 'client.jar'))
+    os.symlink(os.path.join(MCHOME, 'home', '.minecraft', 'versions', version, version + '.jar'), link_name=os.path.join(MCHOME, 'home', 'client.jar'))
+    start(reply=reply, start_message='Server updated. Restarting...')
+    return version, snapshot, version_text
 
 def update_status():
     d = {
@@ -393,7 +418,12 @@ if __name__ == '__main__':
     elif arguments['restart']:
         restart()
     elif arguments['update']:
-        update((arguments['<snapshot-id>'] if arguments['snapshot'] else arguments['VERSION']), snapshot=arguments['snapshot'])
+        if arguments['snapshot']:
+            update(arguments['<snapshot-id>'], snapshot=True)
+        elif arguments['VERSION']:
+            update(arguments['<snapshot-id>'])
+        else:
+            update(snapshot=True)
     elif arguments['backup']:
         backup()
     elif arguments['status']:
