@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.12.2'
+__version__ = '2.12.3'
 
 import sys
 
@@ -113,7 +113,7 @@ def backup(announce=False):
     print('Symlinking to httpdocs...')
     if os.path.lexists(BACKUPWEB):
         os.unlink(BACKUPWEB)
-    os.symlink(backup_file + '.gz', link_name=BACKUPWEB)
+    os.symlink(backup_file + '.gz', BACKUPWEB)
     print('Done.')
 
 def command(cmd, args=[], block=False, subst=True):
@@ -351,10 +351,10 @@ def update(version=None, snapshot=False, reply=print):
     stop(reply=reply)
     if os.path.lexists(os.path.join(MCPATH, SERVICE)):
         os.unlink(os.path.join(MCPATH, SERVICE))
-    os.symlink(os.path.join(JARDIR, 'minecraft_server.' + version + '.jar'), link_name=os.path.join(MCPATH, SERVICE))
+    os.symlink(os.path.join(JARDIR, 'minecraft_server.' + version + '.jar'), os.path.join(MCPATH, SERVICE))
     if os.path.lexists(os.path.join(MCHOME, 'home', 'client.jar')):
         os.unlink(os.path.join(MCHOME, 'home', 'client.jar'))
-    os.symlink(os.path.join(MCHOME, 'home', '.minecraft', 'versions', version, version + '.jar'), link_name=os.path.join(MCHOME, 'home', 'client.jar'))
+    os.symlink(os.path.join(MCHOME, 'home', '.minecraft', 'versions', version, version + '.jar'), os.path.join(MCHOME, 'home', 'client.jar'))
     start(reply=reply, start_message='Server updated. Restarting...')
     return version, snapshot, version_text
 
