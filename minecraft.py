@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.12.1'
+__version__ = '2.12.2'
 
 import sys
 
@@ -377,7 +377,7 @@ def update_whitelist(people_file='/opt/wurstmineberg/config/people.json'):
             for person in json.load(people):
                 if not person.get('minecraft'):
                     continue
-                if person.get('status', 'later') not in ['founding', 'later']:
+                if person.get('status', 'later') not in ['founding', 'later', 'postfreeze']:
                     continue
                 print(person['minecraft'], file=whitelistfile)
     command('whitelist', ['reload'])
@@ -390,15 +390,28 @@ def version():
 
 def whitelist(people_file='/opt/wurstmineberg/config/people.json'):
     with open(people_file) as people:
-       return (person for person in json.load(people) if person.get('status', 'later') in ['founding', 'later'])
+       return (person for person in json.load(people) if person.get('status', 'later') in ['founding', 'later', 'postfreeze'])
 
-def whitelist_add(id, minecraft_nick, people_file='/opt/wurstmineberg/config/people.json'):
+def whitelist_add(id, minecraft_nick=None, people_file='/opt/wurstmineberg/config/people.json', person_status='postfreeze'):
     with open(people_file) as f:
         people = json.load(f)
     for person in people:
         if person['id'] == id:
-            raise ValueError()
-    people.append({'id': id, 'minecraft': minecraft_nick})
+            if person['status'] == 'invited':
+                person['join_date'] = datetime.utcnow().strftime('%Y-%m-%d')
+                if minecraft_nick is not None:
+                    person['minecraft'] = minecraft_nick
+                person['status'] = person_status
+                break
+            else:
+                raise ValueError('A person with this id already exists')
+    else:
+        people.append({
+            'id': id,
+            'join_date': datetime.utcnow().strftime('%Y-%m-%d'),
+            'minecraft': minecraft_nick,
+            'status': person_status
+        })
     with open(people_file, 'w') as f:
         json.dump(people, f, sort_keys=True, indent=4, separators=(',', ': '))
     update_whitelist(people_file=people_file)
