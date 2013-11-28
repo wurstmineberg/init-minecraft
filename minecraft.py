@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.12.3'
+__version__ = '2.12.4'
 
 import sys
 
@@ -36,6 +36,7 @@ import shlex
 import socket
 import subprocess
 import time
+import datetime.time as dtime
 
 MCHOME = '/opt/wurstmineberg'
 HTTPDOCS = '/var/www/wurstmineberg.de'
@@ -66,6 +67,13 @@ class regexes:
     player = '[A-Za-z0-9_]{1,16}'
     prefix = '\\[(.+?)\\]:?'
     timestamp = '\\[[0-9]{2}:[0-9]{2}:[0-9]{2}\\]'
+    
+    @staticmethod
+    def strptime(base_date, timestamp):
+        # return UTC datetime object from log timestamp
+        if isinstance(base_date, str):
+            base_date = date.strptime(base_date, '%Y-%m-%d')
+        return datetime.combine(base_date, dtime.strptime(timestamp + '+0000', '[%H:%M:%S]%z'))
 
 def _command_output(cmd, args=[]):
     p = subprocess.Popen([cmd] + args, stdout=subprocess.PIPE)
@@ -152,7 +160,7 @@ def log(reverse=False):
             for line in reversed(list(logfile)):
                 match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                 if match:
-                    yield datetime.strptime(date.today().strftime('%Y-%m-%d') + match.group(1) + ' +0000', '%Y-%m-%d[%H:%M:%S] %z'), match.group(2), match.group(3)
+                    yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
                 else:
                     yield None, None, line.rstrip('\r\n')
         for logfilename in sorted(os.listdir(os.path.join(MCPATH, 'logs')), reverse=True):
@@ -163,7 +171,7 @@ def log(reverse=False):
             for line in reversed(log_bytes.decode('utf-8').splitlines()):
                 match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                 if match:
-                    yield datetime.strptime(logfilename[:10] + match.group(1) + ' +0000', '%Y-%m-%d[%H:%M:%S] %z'), match.group(2), match.group(3)
+                    yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
                 else:
                     yield None, None, line
         with open(os.path.join(MCPATH, 'server.log')) as logfile:
@@ -189,14 +197,14 @@ def log(reverse=False):
             for line in log_bytes.decode('utf-8').splitlines():
                 match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                 if match:
-                    yield datetime.strptime(logfilename[:10] + match.group(1) + ' +0000', '%Y-%m-%d[%H:%M:%S] %z'), match.group(2), match.group(3)
+                    yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
                 else:
                     yield None, None, line
         with open(os.path.join(MCPATH, 'logs', 'latest.log')) as logfile:
             for line in logfile:
                 match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                 if match:
-                    yield datetime.strptime(date.today().strftime('%Y-%m-%d') + match.group(1) + ' +0000', '%Y-%m-%d[%H:%M:%S] %z'), match.group(2), match.group(3)
+                    yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
                 else:
                     yield None, None, line.rstrip('\r\n')
 
