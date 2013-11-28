@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.12.4'
+__version__ = '2.12.5'
 
 import sys
 
@@ -36,7 +36,7 @@ import shlex
 import socket
 import subprocess
 import time
-import datetime.time as dtime
+from datetime import time as dtime
 
 MCHOME = '/opt/wurstmineberg'
 HTTPDOCS = '/var/www/wurstmineberg.de'
