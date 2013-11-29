@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.12.5'
+__version__ = '2.12.6'
 
 import sys
 
@@ -23,6 +23,7 @@ sys.path.append('/opt/py')
 from datetime import date
 from datetime import datetime
 from docopt import docopt
+from datetime import time as dtime
 import errno
 import gzip
 import json
@@ -36,7 +37,7 @@ import shlex
 import socket
 import subprocess
 import time
-from datetime import time as dtime
+from datetime import timezone
 
 MCHOME = '/opt/wurstmineberg'
 HTTPDOCS = '/var/www/wurstmineberg.de'
@@ -73,7 +74,10 @@ class regexes:
         # return UTC datetime object from log timestamp
         if isinstance(base_date, str):
             base_date = date.strptime(base_date, '%Y-%m-%d')
-        return datetime.combine(base_date, dtime.strptime(timestamp + '+0000', '[%H:%M:%S]%z'))
+        hour = int(timestamp[1:3])
+        minute = int(timestamp[4:6])
+        second = int(timestamp[7:9])
+        return datetime.combine(base_date, dtime(hour=hour, minute=minute, second=second, tzinfo=timezone.utc))
 
 def _command_output(cmd, args=[]):
     p = subprocess.Popen([cmd] + args, stdout=subprocess.PIPE)
