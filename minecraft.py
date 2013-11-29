@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.12.6'
+__version__ = '2.12.7'
 
 import sys
 
@@ -323,6 +323,7 @@ def stop(*args, **kwargs):
     reply = kwargs.get('reply', print)
     if status():
         reply('SERVER SHUTTING DOWN IN 10 SECONDS. Saving map...')
+        say('SERVER SHUTTING DOWN IN 10 SECONDS. Saving map...')
         command('save-all')
         time.sleep(10)
         command('stop')
