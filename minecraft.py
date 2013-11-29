@@ -73,7 +73,7 @@ class regexes:
     def strptime(base_date, timestamp):
         # return UTC datetime object from log timestamp
         if isinstance(base_date, str):
-            base_date = date.strptime(base_date, '%Y-%m-%d')
+            return datetime.strptime(base_date + timestamp, '%Y-%m-%d[%H:%M:%S]')
         hour = int(timestamp[1:3])
         minute = int(timestamp[4:6])
         second = int(timestamp[7:9])
