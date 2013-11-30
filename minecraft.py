@@ -14,7 +14,7 @@ Options:
   --version   Print version info and exit.
 """
 
-__version__ = '2.12.7'
+__version__ = '2.12.8'
 
 import sys
 
@@ -129,6 +129,7 @@ def backup(announce=False):
     print('Done.')
 
 def command(cmd, args=[], block=False, subst=True):
+    # raises socket.error if Minecraft is disconnected
     def file_len(file): #FROM http://stackoverflow.com/questions/845058/how-to-get-line-count-cheaply-in-python
         for i, l in enumerate(file):
             pass
@@ -214,7 +215,10 @@ def log(reverse=False):
 
 def online_players(retry=True):
     found = False
-    list = command('list')
+    try:
+        list = command('list')
+    except socket.error:
+        return []
     if list is None:
         if retry:
             return online_players(retry=False)
