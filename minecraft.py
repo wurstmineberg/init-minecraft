@@ -3,18 +3,19 @@
 """Minecraft server script for init.d.
 
 Usage:
-  minecraft start | stop | backup | status | restart
-  minecraft update [snapshot <snapshot-id> | VERSION]
-  minecraft command COMMAND...
+  minecraft [options] start | stop | backup | status | restart
+  minecraft [options] update [snapshot <snapshot-id> | VERSION]
+  minecraft [options] command COMMAND...
   minecraft -h | --help
   minecraft --version
 
 Options:
-  -h, --help  Print this message and exit.
-  --version   Print version info and exit.
+  -h, --help         Print this message and exit.
+  --config=<config>  Path to the config file [default: /opt/wurstmineberg/config/init-minecraft.json].
+  --version          Print version info and exit.
 """
 
-__version__ = '2.12.8'
+__version__ = '2.13.0'
 
 import sys
 
@@ -39,26 +40,48 @@ import subprocess
 import time
 from datetime import timezone
 
-MCHOME = '/opt/wurstmineberg'
-HTTPDOCS = '/var/www/wurstmineberg.de'
-LOGDIR = os.path.join(MCHOME, 'log')
+CONFIG_FILE = '/opt/wurstmineberg/config/init-minecraft.json'
+if __name__ == '__main__':
+    arguments = docopt(__doc__, version='minecraft init script ' + __version__)
+    CONFIG_FILE = arguments['--config']
 
-ASSETS = os.path.join(HTTPDOCS, 'assets', 'serverstatus')
-BACKUPPATH = os.path.join(MCHOME, 'backup')
-BACKUPWEB = os.path.join(HTTPDOCS, 'latestbackup.tar.gz')
-CMDLOG = os.path.join(LOGDIR, 'commands.log')
-CPU_COUNT = 1
-MAXHEAP = 4096
-MINHEAP = 2048
-MCPATH = os.path.join(MCHOME, 'server')
-JARDIR = os.path.join(MCPATH, 'jar')
-OPTIONS = ['nogui']
-SERVICE = 'minecraft_server.jar'
-SOCKPATH = '/var/local/wurstmineberg/minecraft_commands.sock'
-USERNAME = 'wurstmineberg'
-WORLD = 'wurstmineberg'
+def config(key=None, default_value=None):
+    default_config = {
+        'java_options': {
+            'cpu_count': 1,
+            'jar_options': ['nogui'],
+            'max_heap': 4096,
+            'min_heap': 2048
+        },
+        'paths': {
+            'assets': os.path.join(config('paths').get('httpdocs', '/var/www/wurstmineberg.de'), 'assets', 'serverstatus'),
+            'backup': os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'backup'),
+            'backupweb': os.path.join(config('paths').get('httpdocs', '/var/www/wurstmineberg.de'), 'latestbackup.tar.gz'),
+            'client_versions': os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'home', '.minecraft', 'versions'),
+            'commandlog': os.path.join(config('paths').get('log', os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'log')), 'commands.log'),
+            'home': '/opt/wurstmineberg',
+            'httpdocs': '/var/www/wurstmineberg.de',
+            'jar': os.path.join(config('paths').get('server', os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'server')), 'jar'),
+            'log': os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'log'),
+            'server': os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'server'),
+            'service': os.path.join(config('paths').get('server', os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'server')), config('service_name')),
+            'socket': '/var/local/wurstmineberg/minecraft_commands.sock'
+        },
+        'service_name': 'minecraft_server.jar',
+        'usc': False,
+        'username': 'wurstmineberg',
+        'world': 'wurstmineberg'
+    }
+    try:
+        with open(CONFIG_FILE) as config_file:
+            j = json.load(config_file)
+    except:
+        j = default_config
+    if key is None:
+        return j
+    return j.get(key, default_config.get(key)) if default_value is None else j.get(key, default_value)
 
-INVOCATION = ['java', '-Xmx' + str(MAXHEAP) + 'M', '-Xms' + str(MINHEAP) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(CPU_COUNT), '-XX:+AggressiveOpts', '-jar', SERVICE] + OPTIONS
+INVOCATION = ['java', '-Xmx' + str(config('java_options')['max_heap']) + 'M', '-Xms' + str(config('java_options')['min_heap']) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(config('java_options')['cpu_count']), '-XX:+AggressiveOpts', '-jar', config('paths')['service']] + config('java_options')['jar_options']
 
 class MinecraftServerNotRunningError(Exception):
     pass
@@ -114,18 +137,17 @@ def _fork(func):
 def backup(announce=False):
     saveoff(announce=announce)
     now = datetime.utcnow().strftime('%Y-%m-%d_%Hh%M')
-    backup_file = BACKUPPATH + '/' + WORLD + '_' + now + '.tar'
+    backup_file = os.path.join(config('paths')['backup'], config('world') + '_' + now + '.tar')
     print('Backing up minecraft world...')
-    subprocess.call(['tar', '-C', MCPATH, '-cf', backup_file, WORLD])
-    print('Backing up ' + SERVICE)
-    subprocess.call(['rsync', '-av', os.path.join(MCPATH, WORLD) + '/', os.path.join(BACKUPPATH, 'latest')])
+    subprocess.call(['tar', '-C', config('paths')['server'], '-cf', backup_file, config('world')])
+    subprocess.call(['rsync', '-av', os.path.join(config('paths')['server'], config('world')) + '/', os.path.join(config('paths')['backup'], 'latest')])
     saveon(announce=announce)
     print('Compressing backup...')
     subprocess.call(['gzip', '-f', backup_file])
     print('Symlinking to httpdocs...')
-    if os.path.lexists(BACKUPWEB):
-        os.unlink(BACKUPWEB)
-    os.symlink(backup_file + '.gz', BACKUPWEB)
+    if os.path.lexists(config('paths')['backupweb']):
+        os.unlink(config('paths')['backupweb'])
+    os.symlink(backup_file + '.gz', config('paths')['backupweb'])
     print('Done.')
 
 def command(cmd, args=[], block=False, subst=True):
@@ -138,19 +160,19 @@ def command(cmd, args=[], block=False, subst=True):
     if (not block) and not status():
         return None
     #pre_log_len = len(list(log()))
-    with open(os.path.join(MCPATH, 'logs', 'latest.log')) as logfile:
+    with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
         pre_log_len = file_len(logfile)
         #print('DEBUG] pre-command log length: ' + str(pre_log_len)) #DEBUG
     cmd += (' ' + ' '.join(str(arg) for arg in args)) if len(args) else ''
     with socket.socket(socket.AF_UNIX) as s:
-        s.connect(SOCKPATH)
+        s.connect(config('paths')['socket'])
         s.sendall(cmd.encode('utf-8') + b'\n')
     #with open(CMDPIPE, 'w') as cmdpipe:
     #    print(cmd, file=cmdpipe)
     #subprocess.call(['screen', '-p', '0', '-S', 'minecraft', '-X', 'eval', 'stuff "' + cmd + '"\015'], shell=True) # because nothing else works
     time.sleep(0.2) # assumes that the command will run and print to the log file in less than .2 seconds
     #return list(log())[pre_log_len:]
-    return _command_output('tail', ['-n', '+' + str(pre_log_len + 1), os.path.join(MCPATH, 'logs', 'latest.log')])
+    return _command_output('tail', ['-n', '+' + str(pre_log_len + 1), os.path.join(config('paths')['server'], 'logs', 'latest.log')])
 
 def last_seen(player):
     for timestamp, _, logline in log(reverse=True):
@@ -161,17 +183,17 @@ def last_seen(player):
 
 def log(reverse=False):
     if reverse:
-        with open(os.path.join(MCPATH, 'logs', 'latest.log')) as logfile:
+        with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
             for line in reversed(list(logfile)):
                 match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                 if match:
                     yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
                 else:
                     yield None, None, line.rstrip('\r\n')
-        for logfilename in sorted(os.listdir(os.path.join(MCPATH, 'logs')), reverse=True):
+        for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True):
             if not logfilename.endswith('.log.gz'):
                 continue
-            with gzip.open(os.path.join(MCPATH, 'logs', logfilename)) as logfile:
+            with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
                 log_bytes = logfile.read()
             for line in reversed(log_bytes.decode('utf-8').splitlines()):
                 match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
@@ -179,7 +201,7 @@ def log(reverse=False):
                     yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
                 else:
                     yield None, None, line
-        with open(os.path.join(MCPATH, 'server.log')) as logfile:
+        with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
             for line in reversed(list(logfile)):
                  match = re.match('(' + regexes.old_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                  if match:
@@ -187,17 +209,17 @@ def log(reverse=False):
                  else:
                      yield None, None, line.rstrip('\r\n')
     else:
-        with open(os.path.join(MCPATH, 'server.log')) as logfile:
+        with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
             for line in logfile:
                  match = re.match('(' + regexes.old_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                  if match:
                      yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
                  else:
                      yield None, None, line.rstrip('\r\n')
-        for logfilename in sorted(os.listdir(os.path.join(MCPATH, 'logs'))):
+        for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs'))):
             if not logfilename.endswith('.log.gz'):
                 continue
-            with gzip.open(os.path.join(MCPATH, 'logs', logfilename)) as logfile:
+            with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
                 log_bytes = logfile.read()
             for line in log_bytes.decode('utf-8').splitlines():
                 match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
@@ -205,7 +227,7 @@ def log(reverse=False):
                     yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
                 else:
                     yield None, None, line
-        with open(os.path.join(MCPATH, 'logs', 'latest.log')) as logfile:
+        with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
             for line in logfile:
                 match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                 if match:
@@ -251,7 +273,7 @@ def restart(*args, **kwargs):
 
 def saveoff(announce=True):
     if status():
-        print(SERVICE + ' is running... suspending saves')
+        print('Minecraft is running... suspending saves')
         if announce:
             say('Server backup starting. Server going readonly...')
         command('save-off')
@@ -259,16 +281,16 @@ def saveoff(announce=True):
         subprocess.call(['sync'])
         time.sleep(10)
     else:
-        print(SERVICE + ' is not running. Not suspending saves.')
+        print('Minecraft is not running. Not suspending saves.')
 
 def saveon(announce=True):
     if status():
-        print(SERVICE + ' is running... re-enabling saves')
+        print('Minecraft is running... re-enabling saves')
         command('save-on')
         if announce:
             say('Server backup ended. Server going readwrite...')
     else:
-        print(SERVICE + ' is not running. Not resuming saves.')
+        print('Minecraft is not running. Not resuming saves.')
 
 def say(message, prefix=True):
     if prefix:
@@ -280,12 +302,12 @@ def start(*args, **kwargs):
     reply = kwargs.get('reply', print)
     def _start(timeout=0.1):
         with open(os.path.devnull) as devnull:
-            javapopen = subprocess.Popen(INVOCATION, stdin=subprocess.PIPE, stdout=devnull, cwd=MCPATH)
+            javapopen = subprocess.Popen(INVOCATION, stdin=subprocess.PIPE, stdout=devnull, cwd=config('paths')['server'])
         loopvar = True
         with socket.socket(socket.AF_UNIX) as s:
-            if os.path.exists(SOCKPATH):
-                os.remove(SOCKPATH)
-            s.bind(SOCKPATH)
+            if os.path.exists(config('paths')['socket']):
+                os.remove(config('paths')['socket'])
+            s.bind(config('paths')['socket'])
             while loopvar:
                 str_buffer = ''
                 s.listen(1)
@@ -305,8 +327,8 @@ def start(*args, **kwargs):
                 if javapopen.poll() is not None:
                     return
         javapopen.communicate(input=b'stop\n')
-        if os.path.exists(SOCKPATH):
-            os.remove(SOCKPATH)
+        if os.path.exists(config('paths')['socket']):
+            os.remove(config('paths')['socket'])
     
     if status():
         reply('Server is already running!')
@@ -314,14 +336,13 @@ def start(*args, **kwargs):
     else:
         reply(kwargs.get('start_message', 'starting Minecraft server...'))
         _fork(_start)
-        #subprocess.Popen('screen -dmS minecraft ' + INVOCATION, cwd=MCPATH, shell=True)
         time.sleep(7)
         update_status()
         return status()
 
 def status():
     with open(os.devnull, 'a') as devnull:
-        return not subprocess.call(['pgrep', '-u', 'wurstmineberg', '-f', SERVICE], stdout=devnull)
+        return not subprocess.call(['pgrep', '-u', 'wurstmineberg', '-f', config('service_name')], stdout=devnull)
 
 def stop(*args, **kwargs):
     reply = kwargs.get('reply', print)
@@ -361,17 +382,17 @@ def update(version=None, snapshot=False, reply=print):
         version_dict = None
     version_text = 'Minecraft ' + ('snapshot ' if snapshot else 'version ') + version
     reply('Downloading ' + version_text)
-    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar'], cwd=JARDIR)
-    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', '-P', os.path.join(MCHOME, 'home', '.minecraft', 'versions', version)])
+    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar'], cwd=config('paths')['jar'])
+    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', '-P', os.path.join(config('paths')['client_versions'], version)])
     say('Server will be upgrading to ' + version_text + ' and therefore restart')
     time.sleep(5)
     stop(reply=reply)
-    if os.path.lexists(os.path.join(MCPATH, SERVICE)):
-        os.unlink(os.path.join(MCPATH, SERVICE))
-    os.symlink(os.path.join(JARDIR, 'minecraft_server.' + version + '.jar'), os.path.join(MCPATH, SERVICE))
-    if os.path.lexists(os.path.join(MCHOME, 'home', 'client.jar')):
-        os.unlink(os.path.join(MCHOME, 'home', 'client.jar'))
-    os.symlink(os.path.join(MCHOME, 'home', '.minecraft', 'versions', version, version + '.jar'), os.path.join(MCHOME, 'home', 'client.jar'))
+    if os.path.lexists(config('paths')['service']):
+        os.unlink(config('paths')['service'])
+    os.symlink(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'), config('paths')['service'])
+    if os.path.lexists(os.path.join(config('paths')['home'], 'home', 'client.jar')):
+        os.unlink(os.path.join(config('paths')['home'], 'home', 'client.jar'))
+    os.symlink(os.path.join(config('paths')['client_versions'], version, version + '.jar'), os.path.join(config('paths')['home'], 'home', 'client.jar'))
     start(reply=reply, start_message='Server updated. Restarting...')
     return version, snapshot, version_text
 
@@ -381,11 +402,11 @@ def update_status():
         'on': status(),
         'version': version()
     }
-    with open(ASSETS + '/status.json', 'w') as statusjson:
+    with open(os.path.join(config('paths')['assets'], 'status.json'), 'w') as statusjson:
         json.dump(d, statusjson, sort_keys=True, indent=4, separators=(',', ': '))
 
 def update_whitelist(people_file='/opt/wurstmineberg/config/people.json'):
-    with open(MCPATH + '/white-list.txt', 'w') as whitelistfile:
+    with open(os.path.join(config('paths')['server'], 'white-list.txt'), 'w') as whitelistfile:
         print('# DO NOT EDIT THIS FILE', file=whitelistfile)
         print('# it is automatically generated from /opt/wurstmineberg/config/people.json', file=whitelistfile)
         print('# all changes will be lost on the next auto-update', file=whitelistfile)
@@ -434,17 +455,16 @@ def whitelist_add(id, minecraft_nick=None, people_file='/opt/wurstmineberg/confi
     update_whitelist(people_file=people_file)
 
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='minecraft init script ' + __version__)
     if arguments['start']:
         if start():
-            print(SERVICE + ' is now running.')
+            print('[ ok ] minecraft is now running.')
         else:
-            print('Error! Could not start ' + SERVICE + '!')
+            print('[FAIL] Error! Could not start minecraft.')
     elif arguments['stop']:
         if stop():
-            print(SERVICE + ' is stopped.')
+            print('[ ok ] minecraft is stopped.')
         else:
-            print('Error! ' + SERVICE + ' could not be stopped.')
+            print('[FAIL] Error! minecraft could not be stopped.')
     elif arguments['restart']:
         restart()
     elif arguments['update']:
@@ -457,7 +477,7 @@ if __name__ == '__main__':
     elif arguments['backup']:
         backup()
     elif arguments['status']:
-        print('minecraft is ' + ('running.' if status() else 'not running.'))
+        print('[info] minecraft is ' + ('running.' if status() else 'not running.'))
     elif arguments['command']:
         cmdlog = command(arguments['COMMAND'][0], arguments['COMMAND'][1:])
         for line in cmdlog.splitlines():
