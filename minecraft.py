@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.1'
+__version__ = '2.13.2'
 
 import sys
 
@@ -54,18 +54,18 @@ def config(key=None, default_value=None):
             'min_heap': 2048
         },
         'paths': {
-            'assets': os.path.join(config('paths').get('httpdocs', '/var/www/wurstmineberg.de'), 'assets', 'serverstatus'),
-            'backup': os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'backup'),
-            'backupweb': os.path.join(config('paths').get('httpdocs', '/var/www/wurstmineberg.de'), 'latestbackup.tar.gz'),
-            'client_versions': os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'home', '.minecraft', 'versions'),
-            'commandlog': os.path.join(config('paths').get('log', os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'log')), 'commands.log'),
+            'assets': '/var/www/wurstmineberg.de/assets/serverstatus',
+            'backup': '/opt/wurstmineberg/backup',
+            'backupweb': '/var/www/wurstmineberg.de/latestbackup.tar.gz',
+            'client_versions': '/opt/wurstmineberg/home/.minecraft/versions',
+            'commandlog': '/opt/wurstmineberg/log/commands.log',
             'home': '/opt/wurstmineberg',
             'httpdocs': '/var/www/wurstmineberg.de',
-            'jar': os.path.join(config('paths').get('server', os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'server')), 'jar'),
-            'log': os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'log'),
+            'jar': '/opt/wurstmineberg/server/jar',
+            'log': '/opt/wurstmineberg/log',
             'people': '/opt/wurstmineberg/config/people.json',
-            'server': os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'server'),
-            'service': os.path.join(config('paths').get('server', os.path.join(config('paths').get('home', '/opt/wurstmineberg'), 'server')), config('service_name')),
+            'server': '/opt/wurstmineberg/server',
+            'service': '/opt/wurstmineberg/server/service_name',
             'socket': '/var/local/wurstmineberg/minecraft_commands.sock'
         },
         'service_name': 'minecraft_server.jar',
