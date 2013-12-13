@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.2'
+__version__ = '2.13.3'
 
 import sys
 
@@ -28,13 +28,10 @@ from datetime import time as dtime
 import errno
 import gzip
 import json
-import line64
 import os
 import os.path
-import pty
 import re
 import requests
-import shlex
 import socket
 import subprocess
 import time
