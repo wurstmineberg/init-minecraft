@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.3'
+__version__ = '2.13.4'
 
 import sys
 
@@ -185,57 +185,81 @@ def last_seen(player):
 
 def log(reverse=False):
     if reverse:
-        with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
-            for line in reversed(list(logfile)):
-                match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                if match:
-                    yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
-                else:
-                    yield None, None, line.rstrip('\r\n')
-        for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True):
-            if not logfilename.endswith('.log.gz'):
-                continue
-            with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
-                log_bytes = logfile.read()
-            for line in reversed(log_bytes.decode('utf-8').splitlines()):
-                match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                if match:
-                    yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
-                else:
-                    yield None, None, line
-        with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
-            for line in reversed(list(logfile)):
-                 match = re.match('(' + regexes.old_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                 if match:
-                     yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
-                 else:
-                     yield None, None, line.rstrip('\r\n')
+        try:
+            with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
+                for line in reversed(list(logfile)):
+                    match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+                    if match:
+                        yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
+                    else:
+                        yield None, None, line.rstrip('\r\n')
+        except FileNotFoundError:
+            pass
+        try:
+            for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True):
+                if not logfilename.endswith('.log.gz'):
+                    continue
+                try:
+                    with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
+                        log_bytes = logfile.read()
+                except FileNotFoundError:
+                    continue
+                for line in reversed(log_bytes.decode('utf-8').splitlines()):
+                    match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+                    if match:
+                        yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
+                    else:
+                        yield None, None, line
+        except FileNotFoundError:
+            pass
+        try:
+            with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
+                for line in reversed(list(logfile)):
+                     match = re.match('(' + regexes.old_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+                     if match:
+                         yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
+                     else:
+                         yield None, None, line.rstrip('\r\n')
+        except FileNotFoundError:
+            pass
     else:
-        with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
-            for line in logfile:
-                 match = re.match('(' + regexes.old_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                 if match:
-                     yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
-                 else:
-                     yield None, None, line.rstrip('\r\n')
-        for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs'))):
-            if not logfilename.endswith('.log.gz'):
-                continue
-            with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
-                log_bytes = logfile.read()
-            for line in log_bytes.decode('utf-8').splitlines():
-                match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                if match:
-                    yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
-                else:
-                    yield None, None, line
-        with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
-            for line in logfile:
-                match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                if match:
-                    yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
-                else:
-                    yield None, None, line.rstrip('\r\n')
+        try:
+            with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
+                for line in logfile:
+                     match = re.match('(' + regexes.old_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+                     if match:
+                         yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
+                     else:
+                         yield None, None, line.rstrip('\r\n')
+        except FileNotFoundError:
+            pass
+        try:
+            for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs'))):
+                if not logfilename.endswith('.log.gz'):
+                    continue
+                try:
+                    with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
+                        log_bytes = logfile.read()
+                except FileNotFoundError:
+                    continue
+                for line in log_bytes.decode('utf-8').splitlines():
+                    match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+                    if match:
+                        yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
+                    else:
+                        yield None, None, line
+        except FileNotFoundError:
+            pass
+        try:
+            with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
+                for line in logfile:
+                    match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+                    if match:
+                        yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
+                    else:
+                        yield None, None, line.rstrip('\r\n')
+        except FileNotFoundError:
+            pass
 
 def online_players(retry=True):
     found = False
@@ -355,8 +379,6 @@ def stop(*args, **kwargs):
         time.sleep(10)
         command('stop')
         time.sleep(7)
-        #with open(CMDPIPE, 'w') as cmdpipe:
-        #    print('-break', file=cmdpipe)
     else:
         reply('Minecraft server was not running.')
     update_status()
