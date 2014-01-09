@@ -193,7 +193,7 @@ def log(reverse=False):
                         yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
                     else:
                         yield None, None, line.rstrip('\r\n')
-        except FileNotFoundError:
+        except (IOError, OSError):
             pass
         try:
             for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True):
@@ -202,7 +202,7 @@ def log(reverse=False):
                 try:
                     with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
                         log_bytes = logfile.read()
-                except FileNotFoundError:
+                except (IOError, OSError):
                     continue
                 for line in reversed(log_bytes.decode('utf-8').splitlines()):
                     match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
@@ -210,7 +210,7 @@ def log(reverse=False):
                         yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
                     else:
                         yield None, None, line
-        except FileNotFoundError:
+        except (IOError, OSError):
             pass
         try:
             with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
@@ -220,7 +220,7 @@ def log(reverse=False):
                          yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
                      else:
                          yield None, None, line.rstrip('\r\n')
-        except FileNotFoundError:
+        except (IOError, OSError):
             pass
     else:
         try:
@@ -231,7 +231,7 @@ def log(reverse=False):
                          yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
                      else:
                          yield None, None, line.rstrip('\r\n')
-        except FileNotFoundError:
+        except (IOError, OSError):
             pass
         try:
             for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs'))):
@@ -240,7 +240,7 @@ def log(reverse=False):
                 try:
                     with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
                         log_bytes = logfile.read()
-                except FileNotFoundError:
+                except (IOError, OSError):
                     continue
                 for line in log_bytes.decode('utf-8').splitlines():
                     match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
@@ -248,7 +248,7 @@ def log(reverse=False):
                         yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
                     else:
                         yield None, None, line
-        except FileNotFoundError:
+        except (IOError, OSError):
             pass
         try:
             with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
@@ -258,7 +258,7 @@ def log(reverse=False):
                         yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
                     else:
                         yield None, None, line.rstrip('\r\n')
-        except FileNotFoundError:
+        except (IOError, OSError):
             pass
 
 def online_players(retry=True):
