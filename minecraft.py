@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.5'
+__version__ = '2.13.6'
 
 import sys
 
@@ -161,19 +161,20 @@ def command(cmd, args=[], block=False, subst=True):
     
     if (not block) and not status():
         return None
-    #pre_log_len = len(list(log()))
-    with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
-        pre_log_len = file_len(logfile)
-        #print('DEBUG] pre-command log length: ' + str(pre_log_len)) #DEBUG
+    try:
+        with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
+            pre_log_len = file_len(logfile)
+    except (IOError, OSError):
+        pre_log_len = 0
+    except:
+        pre_log_len = None
     cmd += (' ' + ' '.join(str(arg) for arg in args)) if len(args) else ''
     with socket.socket(socket.AF_UNIX) as s:
         s.connect(config('paths')['socket'])
         s.sendall(cmd.encode('utf-8') + b'\n')
-    #with open(CMDPIPE, 'w') as cmdpipe:
-    #    print(cmd, file=cmdpipe)
-    #subprocess.call(['screen', '-p', '0', '-S', 'minecraft', '-X', 'eval', 'stuff "' + cmd + '"\015'], shell=True) # because nothing else works
+    if pre_log_len is None:
+        return None
     time.sleep(0.2) # assumes that the command will run and print to the log file in less than .2 seconds
-    #return list(log())[pre_log_len:]
     return _command_output('tail', ['-n', '+' + str(pre_log_len + 1), os.path.join(config('paths')['server'], 'logs', 'latest.log')])
 
 def last_seen(player):
