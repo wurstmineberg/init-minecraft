@@ -142,7 +142,7 @@ def backup(announce=False):
     backup_file = os.path.join(config('paths')['backup'], config('world') + '_' + now + '.tar')
     print('Backing up minecraft world...')
     subprocess.call(['tar', '-C', config('paths')['server'], '-cf', backup_file, config('world')])
-    subprocess.call(['rsync', '-av', os.path.join(config('paths')['server'], config('world')) + '/', os.path.join(config('paths')['backup'], 'latest')])
+    subprocess.call(['rsync', '-av --delete', os.path.join(config('paths')['server'], config('world')) + '/', os.path.join(config('paths')['backup'], 'latest')])
     saveon(announce=announce)
     print('Compressing backup...')
     subprocess.call(['gzip', '-f', backup_file])
