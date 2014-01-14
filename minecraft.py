@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.7'
+__version__ = '2.13.8'
 
 import sys
 
@@ -262,13 +262,17 @@ def log(reverse=False):
         except (IOError, OSError):
             pass
 
-def online_players(retry=True):
+def online_players(retry=True, allow_exceptions=False):
     found = False
     try:
         list = command('list')
     except socket.error:
+        if allow_exceptions:
+            raise
         return []
     if list is None:
+        if allow_exceptions:
+            raise ValueError('list is None')
         if retry:
             return online_players(retry=False)
         return []
@@ -279,6 +283,8 @@ def online_players(retry=True):
                 return [] if match.group(1) is None else match.group(1).split(', ')
         found = bool(re.match(regexes.timestamp + ' \\[Server thread/INFO\\]: There are [0-9]+/[0-9]+ players online:' , line))
     # no player list in return
+    if allow_exceptions:
+        raise ValueError('no player list found')
     if retry:
         return online_players(retry=False)
     return []

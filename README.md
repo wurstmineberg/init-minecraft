@@ -1,12 +1,12 @@
 This is **an init script for [Minecraft][] servers**, with some [Wurstmineberg][]-specific extras.
 
-This version 2.13.7 ([semver](http://semver.org/)) of the init script. The versioned API includes the usage pattern, as found in the docstring of [`minecraft.py`](minecraft.py).
+This version 2.13.8 ([semver][Semver]) of the init script. The versioned API includes the usage pattern, as found in the docstring of [`minecraft.py`](minecraft.py).
 
 Requirements
 ============
 
 * [Python][] 3.2
-* The current version of the Minecraft server, available from [here](MinecraftDownload).
+* The current version of the Minecraft server, available from [here][MinecraftDownload].
 * [docopt][Docopt]
 
 Configuration
@@ -20,4 +20,5 @@ To make this work for another server, you may have to modify the paths near the 
 [Minecraft]: http://minecraft.net/ (Minecraft)
 [MinecraftDownload]: https://minecraft.net/download (Minecraft: Download)
 [Python]: http://python.org/ (Python)
+[Semver]: http://semver.org/ (Semantic Versioning 2.0.0)
 [Wurstmineberg]: http://wurstmineberg.de/ (Wurstmineberg)
