@@ -36,6 +36,7 @@ import socket
 import subprocess
 import time
 from datetime import timezone
+import urllib.parse
 
 CONFIG_FILE = '/opt/wurstmineberg/config/init-minecraft.json'
 if __name__ == '__main__':
@@ -492,6 +493,22 @@ def whitelist_add(id, minecraft_nick=None, people_file='/opt/wurstmineberg/confi
     with open(people_file, 'w') as f:
         json.dump(people, f, sort_keys=True, indent=4, separators=(',', ': '))
     update_whitelist(people_file=people_file)
+
+def wiki_version_link(version):
+    if not isinstance(version, str):
+        return 'http://minecraft.gamepedia.com/Version_history'
+    else:
+        try:
+            minecraft_wiki_result = requests.get('http://minecraft.gamepedia.com/api.php?format=json&action=query&titles=' + urllib.parse.quote(version)).json()
+            if 'query' in minecraft_wiki_result and 'pages' in minecraft_wiki_result['query']:
+                for page_id, page_info in minecraft_wiki_result['query']['pages'].items():
+                    if 'missing' in page_info:
+                        return 'http://minecraft.gamepedia.com/Version_history' + ('/Development_versions#' if 'pre' in version or version[2] == 'w' else '#') + urllib.parse.quote(version)
+                    else:
+                        return 'http://minecraft.gamepedia.com/' + re.sub(' ', '_', page_info['title'])
+            return 'http://minecraft.gamepedia.com/Version_history' + ('/Development_versions#' if 'pre' in version or version[2] == 'w' else '#') + urllib.parse.quote(version)
+        except:
+            return 'http://minecraft.gamepedia.com/Version_history' + ('/Development_versions#' if 'pre' in version or version[2] == 'w' else '#') + urllib.parse.quote(version)
 
 if __name__ == '__main__':
     if arguments['start']:
