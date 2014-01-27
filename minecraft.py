@@ -414,6 +414,8 @@ def update(version=None, snapshot=False, reply=print):
         version_dict = None
     version_text = 'Minecraft ' + ('snapshot ' if snapshot else 'version ') + version
     reply('Downloading ' + version_text)
+    if os.path.exists(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar')):
+        os.remove(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
     subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar'], cwd=config('paths')['jar'])
     subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', '-P', os.path.join(config('paths')['client_versions'], version)])
     say('Server will be upgrading to ' + version_text + ' and therefore restart')
