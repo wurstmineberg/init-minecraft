@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.8'
+__version__ = '2.13.11'
 
 import sys
 
@@ -430,9 +430,21 @@ def update(version=None, snapshot=False, reply=print):
     start(reply=reply, start_message='Server updated. Restarting...')
     return version, snapshot, version_text
 
-def update_status():
+def update_status(force=False):
+    if force:
+        players = online_players()
+    else:
+        try:
+            players = online_players(allow_exceptions=True)
+        except:
+            try:
+                with open(os.path.join(config('paths')['assets'], 'status.json')) as statusjson:
+                    old_status = json.load(statusjson)
+                players = old_status['list']
+            except:
+                players = []
     d = {
-        'list': online_players(),
+        'list': players,
         'on': status(),
         'version': version()
     }
