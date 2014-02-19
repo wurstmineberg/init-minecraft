@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.12'
+__version__ = '2.13.13'
 
 import sys
 
@@ -302,9 +302,6 @@ def restart(*args, **kwargs):
     else:
         reply('The server could not be stopped! D:')
         return False
-    if 'log_path' in kwargs:
-        with open(kwargs['log_path'], 'a') as loginslog:
-            print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ' @restart', file=loginslog) # logs in UTC
     kwargs['start_message'] = 'Server stopped. Restarting...'
     return start(*args, **kwargs)
 
@@ -390,6 +387,9 @@ def stop(*args, **kwargs):
         time.sleep(10)
         command('stop')
         time.sleep(7)
+        if kwargs.get('log_path'):
+            with open(kwargs['log_path'], 'a') as loginslog:
+                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ' @restart', file=loginslog) # logs in UTC
     else:
         reply('Minecraft server was not running.')
     update_status()
@@ -402,7 +402,7 @@ def tellraw(message_dict, player='@a'):
         message_dict = {'text': '', 'extra': message_dict}
     command('tellraw', [player, json.dumps(message_dict)])
 
-def update(version=None, snapshot=False, reply=print):
+def update(version=None, snapshot=False, reply=print, log_path=None):
     versions_json = requests.get('https://s3.amazonaws.com/Minecraft.Download/versions/versions.json').json()
     if version is None: # try to dynamically get the latest version number from assets
         version = versions_json['latest']['snapshot' if snapshot else 'release']
@@ -423,7 +423,7 @@ def update(version=None, snapshot=False, reply=print):
     subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', '-P', os.path.join(config('paths')['client_versions'], version)])
     say('Server will be upgrading to ' + version_text + ' and therefore restart')
     time.sleep(5)
-    stop(reply=reply)
+    stop(reply=reply, log_path=log_path)
     if os.path.lexists(config('paths')['service']):
         os.unlink(config('paths')['service'])
     os.symlink(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'), config('paths')['service'])
