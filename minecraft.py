@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.11'
+__version__ = '2.13.12'
 
 import sys
 
@@ -302,6 +302,9 @@ def restart(*args, **kwargs):
     else:
         reply('The server could not be stopped! D:')
         return False
+    if 'log_path' in kwargs:
+        with open(kwargs['log_path'], 'a') as loginslog:
+            print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ' @restart', file=loginslog) # logs in UTC
     kwargs['start_message'] = 'Server stopped. Restarting...'
     return start(*args, **kwargs)
 
