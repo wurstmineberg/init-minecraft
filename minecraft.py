@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.14'
+__version__ = '2.13.15'
 
 import sys
 
@@ -40,7 +40,7 @@ import urllib.parse
 
 CONFIG_FILE = '/opt/wurstmineberg/config/init-minecraft.json'
 if __name__ == '__main__':
-    arguments = docopt(__doc__, version='minecraft init script ' + __version__)
+    arguments = docopt(__doc__, version='Minecraft init script ' + __version__)
     CONFIG_FILE = arguments['--config']
 
 def config(key=None, default_value=None):
@@ -69,6 +69,7 @@ def config(key=None, default_value=None):
         'service_name': 'minecraft_server.jar',
         'usc': False,
         'username': 'wurstmineberg',
+        'utc_offset': 0,
         'whitelist': {
             'additional': [],
             'ignore_people': False
@@ -96,14 +97,14 @@ class regexes:
     timestamp = '\\[[0-9]{2}:[0-9]{2}:[0-9]{2}\\]'
     
     @staticmethod
-    def strptime(base_date, timestamp):
+    def strptime(base_date, timestamp, tzinfo=timezone.utc):
         # return UTC datetime object from log timestamp
         if isinstance(base_date, str):
             return datetime.strptime(base_date + timestamp, '%Y-%m-%d[%H:%M:%S]')
         hour = int(timestamp[1:3])
         minute = int(timestamp[4:6])
         second = int(timestamp[7:9])
-        return datetime.combine(base_date, dtime(hour=hour, minute=minute, second=second, tzinfo=timezone.utc))
+        return datetime.combine(base_date, dtime(hour=hour, minute=minute, second=second, tzinfo=tzinfo))
 
 def _command_output(cmd, args=[]):
     p = subprocess.Popen([cmd] + args, stdout=subprocess.PIPE)
@@ -192,7 +193,7 @@ def log(reverse=False):
                 for line in reversed(list(logfile)):
                     match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                     if match:
-                        yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
+                        yield regexes.strptime(date.today(), match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
                     else:
                         yield None, None, line.rstrip('\r\n')
         except:
