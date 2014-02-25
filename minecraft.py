@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.15'
+__version__ = '2.13.16'
 
 import sys
 
@@ -466,8 +466,11 @@ def update_whitelist(people_file=None):
         print('# all changes will be lost on the next auto-update', file=whitelistfile)
         print(file=whitelistfile)
         if not config('whitelist').get('ignore_people', False):
-            with open(people_file) as people:
-                for person in json.load(people):
+            with open(people_file) as people_fobj:
+                people = json.load(people_fobj):
+                if isinstance(people, dict):
+                    people = people['people']
+                for person in people:
                     if not person.get('minecraft'):
                         continue
                     if person.get('status', 'later') not in ['founding', 'later', 'postfreeze']:
@@ -475,7 +478,7 @@ def update_whitelist(people_file=None):
                     print(person['minecraft'], file=whitelistfile)
         additional = config('whitelist').get('additional', [])
         if len(additional) > 0:
-            print('# additional nicks generated from ' + CONFIG_FILE + ':')
+            print('# additional nicks generated from ' + CONFIG_FILE + ':', file=whitelistfile)
             for minecraft_nick in additional:
                 print(minecraft_nick, file=whitelistfile)
     command('whitelist', ['reload'])
@@ -487,12 +490,17 @@ def version():
             return match.group(1)
 
 def whitelist(people_file='/opt/wurstmineberg/config/people.json'):
-    with open(people_file) as people:
-       return (person for person in json.load(people) if person.get('status', 'later') in ['founding', 'later', 'postfreeze'])
+    with open(people_file) as people_fobj:
+        people = json.load(people_fobj)
+        if isinstance(people, dict):
+            people = people['people']
+        return (person for person in people if person.get('status', 'later') in ['founding', 'later', 'postfreeze'])
 
 def whitelist_add(id, minecraft_nick=None, people_file='/opt/wurstmineberg/config/people.json', person_status='postfreeze'):
     with open(people_file) as f:
         people = json.load(f)
+    if isinstance(people, dict):
+        people = people['people']
     for person in people:
         if person['id'] == id:
             if person['status'] == 'invited':
@@ -510,8 +518,8 @@ def whitelist_add(id, minecraft_nick=None, people_file='/opt/wurstmineberg/confi
             'minecraft': minecraft_nick,
             'status': person_status
         })
-    with open(people_file, 'w') as f:
-        json.dump(people, f, sort_keys=True, indent=4, separators=(',', ': '))
+    with open(people_file, 'w') as people_fobj:
+        json.dump({'people': people}, people_fobj, sort_keys=True, indent=4, separators=(',', ': '))
     update_whitelist(people_file=people_file)
 
 def wiki_version_link(version):
