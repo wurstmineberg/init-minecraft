@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.17'
+__version__ = '2.13.18'
 
 import sys
 
@@ -210,7 +210,7 @@ def log(reverse=False):
                 for line in reversed(log_bytes.decode('utf-8').splitlines()):
                     match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                     if match:
-                        yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
+                        yield regexes.strptime(logfilename[:10], match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
                     else:
                         yield None, None, line
         except:
@@ -248,7 +248,7 @@ def log(reverse=False):
                 for line in log_bytes.decode('utf-8').splitlines():
                     match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                     if match:
-                        yield regexes.strptime(logfilename[:10], match.group(1)), match.group(2), match.group(3)
+                        yield regexes.strptime(logfilename[:10], match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
                     else:
                         yield None, None, line
         except:
@@ -258,7 +258,7 @@ def log(reverse=False):
                 for line in logfile:
                     match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                     if match:
-                        yield regexes.strptime(date.today(), match.group(1)), match.group(2), match.group(3)
+                        yield regexes.strptime(date.today(), match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
                     else:
                         yield None, None, line.rstrip('\r\n')
         except:
