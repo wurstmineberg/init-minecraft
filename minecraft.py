@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.16'
+__version__ = '2.13.17'
 
 import sys
 
@@ -467,7 +467,7 @@ def update_whitelist(people_file=None):
         print(file=whitelistfile)
         if not config('whitelist').get('ignore_people', False):
             with open(people_file) as people_fobj:
-                people = json.load(people_fobj):
+                people = json.load(people_fobj)
                 if isinstance(people, dict):
                     people = people['people']
                 for person in people:
