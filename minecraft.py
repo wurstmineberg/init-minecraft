@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.20'
+__version__ = '2.13.21'
 
 import sys
 
@@ -190,7 +190,7 @@ def last_seen(player, logins_log=None):
             for line in reversed(list(logins)):
                 match = re.match('(' + regexes.old_timestamp + ') (' + regexes.player + ')', line)
                 if match and match.group(2) == player:
-                    return datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %G:%M:%S %z')
+                    return datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z')
 
 def log(reverse=False):
     if reverse:
