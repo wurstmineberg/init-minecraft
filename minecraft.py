@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.18'
+__version__ = '2.13.19'
 
 import sys
 
@@ -179,12 +179,18 @@ def command(cmd, args=[], block=False, subst=True):
     time.sleep(0.2) # assumes that the command will run and print to the log file in less than .2 seconds
     return _command_output('tail', ['-n', '+' + str(pre_log_len + 1), os.path.join(config('paths')['server'], 'logs', 'latest.log')])
 
-def last_seen(player):
-    for timestamp, _, logline in log(reverse=True):
-        match = re.match(re.escape(player) + ' left the game', logline)
-        if match and (timestamp is not None):
-            return timestamp
-    return None
+def last_seen(player, logins_log=None):
+    if logins_log is None:
+        for timestamp, _, logline in log(reverse=True):
+            match = re.match(re.escape(player) + ' left the game', logline)
+            if match and (timestamp is not None):
+                return timestamp
+    else:
+        with open(logins_log) as logins:
+            for line in reversed(list(logins)):
+                match = re.match('(' + regexes.old_timestamp + ') (' + regexes.player, line)
+                if match:
+                    return datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %G:%M:%S %z')
 
 def log(reverse=False):
     if reverse:
