@@ -6,7 +6,7 @@ Requirements
 ============
 
 * [Python][] 3.2
-* The current version of the Minecraft server, available from [here][MinecraftDownload].
+* The current version of the Minecraft server, available from [here][MinecraftDownload] or using the `service minecraft update` command.
 * [docopt][Docopt]
 
 Configuration
@@ -14,7 +14,7 @@ Configuration
 
 If your system has `service`, you can move [`minecraft.py`](minecraft.py) to `/etc/init.d/minecraft`. You can then start, stop, or restart the Minecraft server with `service minecraft start` etc.
 
-To make this work for another server, you may have to modify the paths near the beginning of the file and other things.
+To make this work for another server, you may have to modify the paths and other things in the config file.
 
 [Docopt]: http://github.com/gocopt/docopt (Github: docopt: docopt)
 [Minecraft]: http://minecraft.net/ (Minecraft)
