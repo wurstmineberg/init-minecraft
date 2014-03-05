@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.21'
+__version__ = '2.13.22'
 
 import sys
 
@@ -35,6 +35,7 @@ import requests
 import socket
 import subprocess
 import time
+from datetime import timedelta
 from datetime import timezone
 import urllib.parse
 
