@@ -16,7 +16,7 @@ If your system has `service`, you can move [`minecraft.py`](minecraft.py) to `/e
 
 To make this work for another server, you may have to modify the paths and other things in the config file.
 
-[Docopt]: http://github.com/gocopt/docopt (Github: docopt: docopt)
+[Docopt]: http://github.com/docopt/docopt (Github: docopt: docopt)
 [Minecraft]: http://minecraft.net/ (Minecraft)
 [MinecraftDownload]: https://minecraft.net/download (Minecraft: Download)
 [Python]: http://python.org/ (Python)
