@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.22'
+__version__ = '2.13.23'
 
 import sys
 
@@ -193,7 +193,7 @@ def last_seen(player, logins_log=None):
                 if match and match.group(2) == player:
                     return datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z')
 
-def log(reverse=False):
+def log(reverse=False, error_log=None):
     if reverse:
         try:
             with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
@@ -203,8 +203,12 @@ def log(reverse=False):
                         yield regexes.strptime(date.today(), match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
                     else:
                         yield None, None, line.rstrip('\r\n')
+        except GeneratorExit:
+            raise StopIteration
         except:
-            pass
+            if error_log is not None:
+                print('DEBUG] Exception reading latest.log:', file=error_log)
+                traceback.print_exc(file=error_log)
         try:
             for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True):
                 if not logfilename.endswith('.log.gz'):
@@ -220,8 +224,12 @@ def log(reverse=False):
                         yield regexes.strptime(logfilename[:10], match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
                     else:
                         yield None, None, line
+        except GeneratorExit:
+            raise StopIteration
         except:
-            pass
+            if error_log is not None:
+                print('DEBUG] Exception reading logfiles:', file=error_log)
+                traceback.print_exc(file=error_log)
         try:
             with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
                 for line in reversed(list(logfile)):
@@ -230,8 +238,12 @@ def log(reverse=False):
                          yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
                      else:
                          yield None, None, line.rstrip('\r\n')
+        except GeneratorExit:
+            raise StopIteration
         except:
-            pass
+            if error_log is not None:
+                print('DEBUG] Exception reading server.log:', file=error_log)
+                traceback.print_exc(file=error_log)
     else:
         try:
             with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
@@ -241,8 +253,12 @@ def log(reverse=False):
                          yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
                      else:
                          yield None, None, line.rstrip('\r\n')
+        except GeneratorExit:
+            raise StopIteration
         except:
-            pass
+            if error_log is not None:
+                print('DEBUG] Exception reading server.log:', file=error_log)
+                traceback.print_exc(file=error_log)
         try:
             for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs'))):
                 if not logfilename.endswith('.log.gz'):
@@ -258,8 +274,12 @@ def log(reverse=False):
                         yield regexes.strptime(logfilename[:10], match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
                     else:
                         yield None, None, line
+        except GeneratorExit:
+            raise StopIteration
         except:
-            pass
+            if error_log is not None:
+                print('DEBUG] Exception reading logfiles:', file=error_log)
+                traceback.print_exc(file=error_log)
         try:
             with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
                 for line in logfile:
@@ -268,8 +288,12 @@ def log(reverse=False):
                         yield regexes.strptime(date.today(), match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
                     else:
                         yield None, None, line.rstrip('\r\n')
+        except GeneratorExit:
+            raise StopIteration
         except:
-            pass
+            if error_log is not None:
+                print('DEBUG] Exception reading latest.log:', file=error_log)
+                traceback.print_exc(file=error_log)
 
 def online_players(retry=True, allow_exceptions=False):
     found = False
