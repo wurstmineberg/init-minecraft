@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.24'
+__version__ = '2.13.25'
 
 import sys
 
@@ -553,6 +553,11 @@ def update_whitelist(people_file=None):
     for whitelist_entry in whitelist:
         for person in people['people']:
             if person.get('minecraftUUID') == whitelist_entry['uuid']:
+                if 'minecraft' in person and person['minecraft'] != whitelist_entry['name'] and person['minecraft'] not in person.get('minecraft_previous', []):
+                    if 'minecraft_previous' in person:
+                        person['minecraft_previous'].append(person['minecraft'])
+                    else:
+                        person['minecraft_previous'] = [person['minecraft']]
                 person['minecraft'] = whitelist_entry['name']
             elif person.get('minecraft') == whitelist_entry['name'] and 'minecraftUUID' not in person:
                 person['minecraftUUID'] = whitelist_entry['uuid']
