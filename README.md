@@ -1,6 +1,6 @@
 This is **an init script for [Minecraft][] servers**, with some [Wurstmineberg][]-specific extras.
 
-This version 2.13.23 ([semver][Semver]) of the init script. The versioned API includes the usage pattern, as found in the docstring of [`minecraft.py`](minecraft.py).
+This version 2.13.24 ([semver][Semver]) of the init script. The versioned API includes the usage pattern, as found in the docstring of [`minecraft.py`](minecraft.py).
 
 Requirements
 ============
@@ -8,6 +8,7 @@ Requirements
 * [Python][] 3.2
 * The current version of the Minecraft server, available from [here][MinecraftDownload] or using the `service minecraft update` command.
 * [docopt][Docopt]
+* [lazyjson][LazyJSON] 1.0 (for whitelist management)
 
 Configuration
 =============
@@ -16,7 +17,8 @@ If your system has `service`, you can move [`minecraft.py`](minecraft.py) to `/e
 
 To make this work for another server, you may have to modify the paths and other things in the config file.
 
-[Docopt]: http://github.com/docopt/docopt (Github: docopt: docopt)
+[Docopt]: https://github.com/docopt/docopt (github: docopt: docopt)
+[LazyJSON]: https://github.com/fenhl/lazyjson (github: fenhl: lazyjson)
 [Minecraft]: http://minecraft.net/ (Minecraft)
 [MinecraftDownload]: https://minecraft.net/download (Minecraft: Download)
 [Python]: http://python.org/ (Python)
