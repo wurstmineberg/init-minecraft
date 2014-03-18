@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.26'
+__version__ = '2.13.27'
 
 import sys
 
@@ -187,6 +187,8 @@ def last_seen(player, logins_log=None):
             if match and (timestamp is not None):
                 return timestamp
     else:
+        if hasattr(player, 'id'): # support for wurstminebot.nicksub.Person objects
+            player = player.id
         with open(logins_log) as logins:
             for line in reversed(list(logins)):
                 match = re.match('(' + regexes.old_timestamp + ') (' + regexes.player + ')', line)
