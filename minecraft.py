@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.27'
+__version__ = '2.13.28'
 
 import sys
 
@@ -99,9 +99,16 @@ class regexes:
     
     @staticmethod
     def strptime(base_date, timestamp, tzinfo=timezone.utc):
-        # return UTC datetime object from log timestamp
+        # return aware datetime object from log timestamp
         if isinstance(base_date, str):
-            return datetime.strptime(base_date + timestamp, '%Y-%m-%d[%H:%M:%S]')
+            offset = tzinfo.utcoffset(datetime.now())
+            if offset < timedelta():
+                prefix = '-'
+                offset *= -1
+            else:
+                prefix = '+'
+            timezone_string = prefix + str(offset // timedelta(hours=1)).rjust(2, '0') + str(offset // timedelta(minutes=1) % 60).rjust(2, '0')
+            return datetime.strptime(base_date + timestamp + timezone_string, '%Y-%m-%d[%H:%M:%S]%z')
         hour = int(timestamp[1:3])
         minute = int(timestamp[4:6])
         second = int(timestamp[7:9])
