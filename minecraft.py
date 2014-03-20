@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.13.28'
+__version__ = '2.13.29'
 
 import sys
 
@@ -558,8 +558,11 @@ def update_whitelist(people_file=None):
     for name in by_name + additional:
         command('whitelist', ['add', name])
     # update people file
-    with open(os.path.join(config('paths')['server'], 'whitelist.json')) as whitelist_json:
-        whitelist = json.load(whitelist_json)
+    try:
+        with open(os.path.join(config('paths')['server'], 'whitelist.json')) as whitelist_json:
+            whitelist = json.load(whitelist_json)
+    except ValueError:
+        return
     people = lazyjson.File(config('paths')['people'])
     for whitelist_entry in whitelist:
         for person in people['people']:
