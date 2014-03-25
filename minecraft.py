@@ -582,7 +582,7 @@ def version():
         if match:
             return match.group(1)
 
-def whitelist_add(id, minecraft_nick=None, minecraft_uuid=None, people_file='/opt/wurstmineberg/config/people.json', person_status='postfreeze'):
+def whitelist_add(id, minecraft_nick=None, minecraft_uuid=None, people_file='/opt/wurstmineberg/config/people.json', person_status='postfreeze', invited_by=None):
     with open(people_file) as f:
         people = json.load(f)
     if isinstance(people, dict):
@@ -591,6 +591,10 @@ def whitelist_add(id, minecraft_nick=None, minecraft_uuid=None, people_file='/op
         if person['id'] == id:
             if person['status'] == 'invited' and person_status != 'invited':
                 person['join_date'] = datetime.utcnow().strftime('%Y-%m-%d')
+                if hasattr(invited_by, 'id'):
+                    person['invitedBy'] = invited_by.id
+                elif invited_by is not None:
+                    person['invitedBy'] = invited_by
                 if minecraft_nick is not None:
                     person['minecraft'] = minecraft_nick
                 if minecraft_uuid is not None:
@@ -608,6 +612,10 @@ def whitelist_add(id, minecraft_nick=None, minecraft_uuid=None, people_file='/op
             },
             'status': person_status
         }
+        if hasattr(invited_by, 'id'):
+            person['invitedBy'] = invited_by.id
+        elif invited_by is not None:
+            person['invitedBy'] = invited_by
         if minecraft_nick is not None:
             new_person['minecraft'] = minecraft_nick
         if minecraft_uuid is not None:
