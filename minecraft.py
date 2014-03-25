@@ -45,6 +45,12 @@ if __name__ == '__main__':
     CONFIG_FILE = arguments['--config']
 
 def config(key=None, default_value=None):
+    """Get the item with the given key from the config file.
+
+    Optional arguments:
+    key -- the key from the config dict to return. If not present or None, the entire config will be returned.
+    default_value -- If the specified key is not present in the config file, this argument is returned. If not present of None, a pre-set default is returned instead.
+    """
     default_config = {
         'java_options': {
             'cpu_count': 1,
