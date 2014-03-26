@@ -589,6 +589,18 @@ def version():
             return match.group(1)
 
 def whitelist_add(id, minecraft_nick=None, minecraft_uuid=None, people_file='/opt/wurstmineberg/config/people.json', person_status='postfreeze', invited_by=None):
+    """Add a new person to people.json and reload the whitelist.
+    
+    Required arguments:
+    id -- The person's “Wurstmineberg ID” (the value used in the "id" field of people.json). Must match /[a-z][0-9a-z]{1,15}/.
+    
+    Optional arguments:
+    minecraft_nick -- If given, this will be added to the people.json entry as the value of the "minecraft" field.
+    minecraft_uuid -- If given, this will be added to the people.json entry as the value of the "minecraftUUID" field.
+    people_file -- The path to people.json. Defaults to /opt/wurstmineberg/config/people.json
+    person_status -- This will be added to the people.json entry as the value of the "status" field, determining whether or not the person will be on the whitelist. Defaults to postfreeze.
+    invited_by -- The person who invited the new person. May be a Wurstmineberg ID or a wurstminebot.nicksub.Person object. If given, the inviting person will be noted in the invitee's people.json entry.
+    """
     with open(people_file) as f:
         people = json.load(f)
     if isinstance(people, dict):
