@@ -1,6 +1,6 @@
 This is **an init script for [Minecraft][] servers**, with some [Wurstmineberg][]-specific extras.
 
-This version 2.13.29 ([semver][Semver]) of the init script. The versioned API includes the usage pattern, as found in the docstring of [`minecraft.py`](minecraft.py), as well as all documented functions defined in minecraft.py.
+This version 2.14.0 ([semver][Semver]) of the init script. The versioned API includes the usage pattern, as found in the docstring of [`minecraft.py`](minecraft.py), as well as all documented functions defined in minecraft.py.
 
 Requirements
 ============
