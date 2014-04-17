@@ -92,8 +92,6 @@ def config(key=None, default_value=None):
         return j
     return j.get(key, default_config.get(key)) if default_value is None else j.get(key, default_value)
 
-INVOCATION = ['java', '-Xmx' + str(config('java_options')['max_heap']) + 'M', '-Xms' + str(config('java_options')['min_heap']) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(config('java_options')['cpu_count']), '-XX:+AggressiveOpts', '-jar', config('paths')['service']] + config('java_options')['jar_options']
-
 class MinecraftServerNotRunningError(Exception):
     pass
 
@@ -392,10 +390,11 @@ def say(message, prefix=True):
         tellraw(message)
 
 def start(*args, **kwargs):
+    invocation = ['java', '-Xmx' + str(config('java_options')['max_heap']) + 'M', '-Xms' + str(config('java_options')['min_heap']) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(config('java_options')['cpu_count']), '-XX:+AggressiveOpts', '-jar', config('paths')['service']] + config('java_options')['jar_options']
     reply = kwargs.get('reply', print)
     def _start(timeout=0.1):
         with open(os.path.devnull) as devnull:
-            javapopen = subprocess.Popen(INVOCATION, stdin=subprocess.PIPE, stdout=devnull, cwd=config('paths')['server'])
+            javapopen = subprocess.Popen(invocation, stdin=subprocess.PIPE, stdout=devnull, cwd=config('paths')['server'])
         loopvar = True
         with socket.socket(socket.AF_UNIX) as s:
             if os.path.exists(config('paths')['socket']):
