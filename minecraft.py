@@ -125,6 +125,18 @@ def _command_output(cmd, args=[]):
     out, _ = p.communicate()
     return out.decode('utf-8')
 
+def _download(url, local_filename=None): #FROM http://stackoverflow.com/a/16696317/667338
+    if local_filename is None:
+        local_filename = url.split('#')[0].split('?')[0].split('/')[-1]
+        if local_filename == '':
+            raise ValueError('no local filename specified')
+    r = requests.get(url, stream=True)
+    with open(local_filename, 'wb') as f:
+        for chunk in r.iter_content(chunk_size=1024):
+            if chunk: # filter out keep-alive new chunks
+                f.write(chunk)
+                f.flush()
+
 def _fork(func):
     #FROM http://stackoverflow.com/a/6011298/667338
     # do the UNIX double-fork magic, see Stevens' "Advanced Programming in the UNIX Environment" for details (ISBN 0201563177)
@@ -452,6 +464,14 @@ def tellraw(message_dict, player='@a'):
     command('tellraw', [player, json.dumps(message_dict)])
 
 def update(version=None, snapshot=False, reply=print, log_path=None):
+    """Download a different version of Minecraft and restart the server if it is running.
+    
+    Optional arguments:
+    version -- If given, a version with this name will be downloaded. By default, the newest available version is downloaded.
+    snapshot -- If version is given, this specifies whether the version is a development version. If no version is given, this specifies whether the newest stable version or the newest development version should be downloaded. Defaults to False.
+    reply -- This function is called several times with a string argument representing update progress. Defaults to the built-in print function.
+    log_path -- This is passed to the stop function if the server is stopped before the update.
+    """
     versions_json = requests.get('https://s3.amazonaws.com/Minecraft.Download/versions/versions.json').json()
     if version is None: # try to dynamically get the latest version number from assets
         version = versions_json['latest']['snapshot' if snapshot else 'release']
@@ -468,10 +488,12 @@ def update(version=None, snapshot=False, reply=print, log_path=None):
     reply('Downloading ' + version_text)
     if os.path.exists(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar')):
         os.remove(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
-    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar'], cwd=config('paths')['jar'])
-    subprocess.check_call(['wget', 'https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', '-P', os.path.join(config('paths')['client_versions'], version)])
+    _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar', local_filename=os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
+    if 'client_versions' in config('paths'):
+        _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', local_filename=os.path.join(config('paths')['client_versions'], version))
     say('Server will be upgrading to ' + version_text + ' and therefore restart')
     time.sleep(5)
+    was_running = status()
     stop(reply=reply, log_path=log_path)
     if os.path.lexists(config('paths')['service']):
         os.unlink(config('paths')['service'])
@@ -479,7 +501,8 @@ def update(version=None, snapshot=False, reply=print, log_path=None):
     if os.path.lexists(os.path.join(config('paths')['home'], 'home', 'client.jar')):
         os.unlink(os.path.join(config('paths')['home'], 'home', 'client.jar'))
     os.symlink(os.path.join(config('paths')['client_versions'], version, version + '.jar'), os.path.join(config('paths')['home'], 'home', 'client.jar'))
-    start(reply=reply, start_message='Server updated. Restarting...')
+    if was_running:
+        start(reply=reply, start_message='Server updated. Restarting...')
     return version, snapshot, version_text
 
 def update_status(force=False):
