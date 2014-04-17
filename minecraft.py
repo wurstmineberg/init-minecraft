@@ -70,7 +70,7 @@ def config(key=None, default_value=None):
             'log': '/opt/wurstmineberg/log',
             'people': '/opt/wurstmineberg/config/people.json',
             'server': '/opt/wurstmineberg/server',
-            'service': '/opt/wurstmineberg/server/service_name',
+            'service': '/opt/wurstmineberg/server/minecraft_server.jar',
             'socket': '/var/local/wurstmineberg/minecraft_commands.sock'
         },
         'service_name': 'minecraft_server.jar',
