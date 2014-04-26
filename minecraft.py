@@ -489,7 +489,8 @@ def update(version=None, snapshot=False, reply=print, log_path=None):
         os.remove(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
     _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar', local_filename=os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
     if 'client_versions' in config('paths'):
-        _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', local_filename=os.path.join(config('paths')['client_versions'], version))
+        os.makedirs(os.path.join(config('paths')['client_versions'], version), exist_ok=True)
+        _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', local_filename=os.path.join(config('paths')['client_versions'], version, version + '.jar'))
     say('Server will be upgrading to ' + version_text + ' and therefore restart')
     time.sleep(5)
     was_running = status()
