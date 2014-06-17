@@ -96,7 +96,7 @@ class MinecraftServerNotRunningError(Exception):
     pass
 
 class regexes:
-    old_timestamp = '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}'
+    full_timestamp = '[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}'
     player = '[A-Za-z0-9_]{1,16}'
     prefix = '\\[(.+?)\\]:?'
     timestamp = '\\[[0-9]{2}:[0-9]{2}:[0-9]{2}\\]'
@@ -214,7 +214,7 @@ def last_seen(player, logins_log=None):
             player = player.id
         with open(logins_log) as logins:
             for line in reversed(list(logins)):
-                match = re.match('(' + regexes.old_timestamp + ') (' + regexes.player + ')', line)
+                match = re.match('(' + regexes.full_timestamp + ') (' + regexes.player + ')', line)
                 if match and match.group(2) == player:
                     return datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z')
 
@@ -258,7 +258,7 @@ def log(reverse=False, error_log=None):
         try:
             with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
                 for line in reversed(list(logfile)):
-                     match = re.match('(' + regexes.old_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+                     match = re.match('(' + regexes.full_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                      if match:
                          yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
                      else:
@@ -273,7 +273,7 @@ def log(reverse=False, error_log=None):
         try:
             with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
                 for line in logfile:
-                     match = re.match('(' + regexes.old_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+                     match = re.match('(' + regexes.full_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                      if match:
                          yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
                      else:
