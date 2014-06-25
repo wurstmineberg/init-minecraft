@@ -203,6 +203,27 @@ def command(cmd, args=[], block=False, subst=True):
     time.sleep(0.2) # assumes that the command will run and print to the log file in less than .2 seconds
     return _command_output('tail', ['-n', '+' + str(pre_log_len + 1), os.path.join(config('paths')['server'], 'logs', 'latest.log')])
 
+def enable_world(world_name, **kwargs):
+    """Switch to a different server.properties file.
+    
+    Required arguments:
+    world_name -- The name of the world to be enabled. There must be a file called server.properties.<world_name> in the server directory.
+    
+    Keyword-only arguments:
+    reply -- This function is called with human-readable progress updates. Defaults to the built-in print function.
+    """
+    reply = kwargs.get('reply', print)
+    status = status()
+    if status and not stop(**kwargs):
+        reply('Could not stop the server! World will not be switched.')
+        return False
+    os.unlink(os.path.join(config('paths')['server'], 'server.properties'))
+    os.symlink(os.path.join(config('paths')['server'], 'server.properties.' + world_name), os.path.join(config('paths')['server'], 'server.properties'))
+    if status:
+        return start(**kwargs)
+    else:
+        return True
+
 def last_seen(player, logins_log=None):
     if logins_log is None:
         for timestamp, _, logline in log(reverse=True):
