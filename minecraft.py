@@ -162,26 +162,30 @@ def _fork(func):
         func() # do stuff
         os._exit(os.EX_OK) # all done
 
-def backup(announce=False, reply=print):
+def backup(announce=False, reply=print, path=None):
     """Back up the Minecraft world.
     
     Optional arguments:
     announce -- Whether to announce in-game that saves are being disabled/reenabled.
     reply -- This function is called with human-readable progress updates. Defaults to the built-in print function.
+    path -- Where the backup will be saved. The file extension .tar.gz will be appended automatically. Defaults to a file with the world name and a timestamp in the backups directory.
     """
     save_off(announce=announce, reply=reply)
     now = datetime.utcnow().strftime('%Y-%m-%d_%Hh%M')
-    backup_file = os.path.join(config('paths')['backup'], config('world') + '_' + now + '.tar')
+    if path is None:
+        path = os.path.join(config('paths')['backup'], config('world') + '_' + now)
+    backup_file = path + '.tar'
     reply('Backing up minecraft world...')
     subprocess.call(['tar', '-C', config('paths')['server'], '-cf', backup_file, config('world')])
     subprocess.call(['rsync', '-av', '--delete', os.path.join(config('paths')['server'], config('world')) + '/', os.path.join(config('paths')['backup'], 'latest')])
     save_on(announce=announce, reply=reply)
     reply('Compressing backup...')
     subprocess.call(['gzip', '-f', backup_file])
+    backup_file += '.gz'
     reply('Symlinking to httpdocs...')
     if os.path.lexists(config('paths')['backupweb']):
         os.unlink(config('paths')['backupweb'])
-    os.symlink(backup_file + '.gz', config('paths')['backupweb'])
+    os.symlink(backup_file, config('paths')['backupweb'])
     reply('Done.')
 
 def command(cmd, args=[], block=False, subst=True):
