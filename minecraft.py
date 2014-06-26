@@ -162,21 +162,27 @@ def _fork(func):
         func() # do stuff
         os._exit(os.EX_OK) # all done
 
-def backup(announce=False):
-    saveoff(announce=announce)
+def backup(announce=False, reply=print):
+    """Back up the Minecraft world.
+    
+    Optional arguments:
+    announce -- Whether to announce in-game that saves are being disabled/reenabled.
+    reply -- This function is called with human-readable progress updates. Defaults to the built-in print function.
+    """
+    save_off(announce=announce, reply=reply)
     now = datetime.utcnow().strftime('%Y-%m-%d_%Hh%M')
     backup_file = os.path.join(config('paths')['backup'], config('world') + '_' + now + '.tar')
-    print('Backing up minecraft world...')
+    reply('Backing up minecraft world...')
     subprocess.call(['tar', '-C', config('paths')['server'], '-cf', backup_file, config('world')])
     subprocess.call(['rsync', '-av', '--delete', os.path.join(config('paths')['server'], config('world')) + '/', os.path.join(config('paths')['backup'], 'latest')])
-    saveon(announce=announce)
-    print('Compressing backup...')
+    save_on(announce=announce, reply=reply)
+    reply('Compressing backup...')
     subprocess.call(['gzip', '-f', backup_file])
-    print('Symlinking to httpdocs...')
+    reply('Symlinking to httpdocs...')
     if os.path.lexists(config('paths')['backupweb']):
         os.unlink(config('paths')['backupweb'])
     os.symlink(backup_file + '.gz', config('paths')['backupweb'])
-    print('Done.')
+    reply('Done.')
 
 def command(cmd, args=[], block=False, subst=True):
     # raises socket.error if Minecraft is disconnected
@@ -383,9 +389,15 @@ def restart(*args, **kwargs):
     kwargs['start_message'] = 'Server stopped. Restarting...'
     return start(*args, **kwargs)
 
-def saveoff(announce=True):
+def save_off(announce=True, reply=print):
+    """Turn off automatic world saves, then force-save once.
+    
+    Optional arguments:
+    announce -- Whether to announce in-game that saves are being disabled.
+    reply -- This function is called with human-readable progress updates. Defaults to the built-in print function.
+    """
     if status():
-        print('Minecraft is running... suspending saves')
+        reply('Minecraft is running... suspending saves')
         if announce:
             say('Server backup starting. Server going readonly...')
         command('save-off')
@@ -393,16 +405,22 @@ def saveoff(announce=True):
         subprocess.call(['sync'])
         time.sleep(10)
     else:
-        print('Minecraft is not running. Not suspending saves.')
+        reply('Minecraft is not running. Not suspending saves.')
 
-def saveon(announce=True):
+def save_on(announce=True, reply=print):
+    """Enable automatic world saves.
+    
+    Optional arguments:
+    announce -- Whether to announce in-game that saves are being enabled.
+    reply -- This function is called with human-readable progress updates. Defaults to the built-in print function.
+    """
     if status():
-        print('Minecraft is running... re-enabling saves')
+        reply('Minecraft is running... re-enabling saves')
         command('save-on')
         if announce:
             say('Server backup ended. Server going readwrite...')
     else:
-        print('Minecraft is not running. Not resuming saves.')
+        reply('Minecraft is not running. Not resuming saves.')
 
 def say(message, prefix=True):
     if prefix:
