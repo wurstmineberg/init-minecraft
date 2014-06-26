@@ -171,8 +171,8 @@ def backup(announce=False, reply=print, path=None):
     path -- Where the backup will be saved. The file extension .tar.gz will be appended automatically. Defaults to a file with the world name and a timestamp in the backups directory.
     """
     save_off(announce=announce, reply=reply)
-    now = datetime.utcnow().strftime('%Y-%m-%d_%Hh%M')
     if path is None:
+        now = datetime.utcnow().strftime('%Y-%m-%d_%Hh%M')
         path = os.path.join(config('paths')['backup'], config('world') + '_' + now)
     backup_file = path + '.tar'
     reply('Backing up minecraft world...')
