@@ -15,7 +15,7 @@ Options:
   --version          Print version info and exit.
 """
 
-__version__ = '2.16.0'
+__version__ = '2.16.1'
 
 import sys
 
