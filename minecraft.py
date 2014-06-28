@@ -697,9 +697,9 @@ def whitelist_add(id, minecraft_nick=None, minecraft_uuid=None, people_file='/op
             'status': person_status
         }
         if hasattr(invited_by, 'id'):
-            person['invitedBy'] = invited_by.id
+            new_person['invitedBy'] = invited_by.id
         elif invited_by is not None:
-            person['invitedBy'] = invited_by
+            new_person['invitedBy'] = invited_by
         if minecraft_nick is not None:
             new_person['minecraft'] = minecraft_nick
         if minecraft_uuid is not None:
