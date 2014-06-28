@@ -223,13 +223,13 @@ def enable_world(world_name, **kwargs):
     reply -- This function is called with human-readable progress updates. Defaults to the built-in print function.
     """
     reply = kwargs.get('reply', print)
-    status = status()
-    if status and not stop(**kwargs):
+    was_running = status()
+    if was_running and not stop(**kwargs):
         reply('Could not stop the server! World will not be switched.')
         return False
     os.unlink(os.path.join(config('paths')['server'], 'server.properties'))
     os.symlink(os.path.join(config('paths')['server'], 'server.properties.' + world_name), os.path.join(config('paths')['server'], 'server.properties'))
-    if status:
+    if was_running:
         return start(**kwargs)
     else:
         return True
