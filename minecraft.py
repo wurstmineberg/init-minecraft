@@ -68,6 +68,7 @@ def config(key=None, default_value=None):
             'httpdocs': '/var/www/wurstmineberg.de',
             'jar': '/opt/wurstmineberg/server/jar',
             'log': '/opt/wurstmineberg/log',
+            'logConfig': 'log4j2.xml',
             'people': '/opt/wurstmineberg/config/people.json',
             'server': '/opt/wurstmineberg/server',
             'service': '/opt/wurstmineberg/server/minecraft_server.jar',
@@ -224,12 +225,22 @@ def enable_world(world_name, **kwargs):
     """
     reply = kwargs.get('reply', print)
     was_running = status()
-    if was_running and not stop(**kwargs):
-        reply('Could not stop the server! World will not be switched.')
-        return False
+    if was_running:
+        stop(**kwargs)
+        for _ in range(6):
+            if status():
+                time.sleep(5)
+                continue
+            else:
+                break
+        else:
+            reply('Could not stop the server! World will not be switched.')
+            return False
+        reply('Server stopped. Switching world...')
     os.unlink(os.path.join(config('paths')['server'], 'server.properties'))
     os.symlink(os.path.join(config('paths')['server'], 'server.properties.' + world_name), os.path.join(config('paths')['server'], 'server.properties'))
     if was_running:
+        kwargs['start_message'] = kwargs.get('start_message', 'World switched. Restarting...')
         return start(**kwargs)
     else:
         return True
@@ -390,7 +401,7 @@ def restart(*args, **kwargs):
     else:
         reply('The server could not be stopped! D:')
         return False
-    kwargs['start_message'] = 'Server stopped. Restarting...'
+    kwargs['start_message'] = kwargs.get('start_message', 'Server stopped. Restarting...')
     return start(*args, **kwargs)
 
 def save_off(announce=True, reply=print):
@@ -433,7 +444,7 @@ def say(message, prefix=True):
         tellraw(message)
 
 def start(*args, **kwargs):
-    invocation = ['java', '-Xmx' + str(config('java_options')['max_heap']) + 'M', '-Xms' + str(config('java_options')['min_heap']) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(config('java_options')['cpu_count']), '-XX:+AggressiveOpts', '-jar', config('paths')['service']] + config('java_options')['jar_options']
+    invocation = ['java', '-Xmx' + str(config('java_options')['max_heap']) + 'M', '-Xms' + str(config('java_options')['min_heap']) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(config('java_options')['cpu_count']), '-XX:+AggressiveOpts', '-Dlog4j.configurationFile=' + config('paths')['logConfig'], '-jar', config('paths')['service']] + config('java_options')['jar_options']
     reply = kwargs.get('reply', print)
     def _start(timeout=0.1):
         with open(os.path.devnull) as devnull:
