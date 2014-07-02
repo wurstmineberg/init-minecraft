@@ -222,6 +222,7 @@ def enable_world(world_name, **kwargs):
     
     Keyword-only arguments:
     reply -- This function is called with human-readable progress updates. Defaults to the built-in print function.
+    start_message -- This string will be passed to the start function when restarting with the new world.
     """
     reply = kwargs.get('reply', print)
     was_running = status()
