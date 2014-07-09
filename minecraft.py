@@ -262,105 +262,41 @@ def last_seen(player, logins_log=None):
                     return datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z')
 
 def log(reverse=False, error_log=None):
+    """Generate lines from all server logs. A line is a triple of the timestamp (an aware datetime object), the prefix (info like the log level, depends on how old the log is), and the log message.
+    
+    Optional arguments:
+    reverse -- Causes the log lines to be generated from newest to oldest instead of chronologically. Defaults to False.
+    error_log -- a file-like object where any error messages and tracebacks are directed. Defaults to None, meaning no error logging.
+    """
     if reverse:
-        try:
-            with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
-                for line in reversed(list(logfile)):
-                    match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                    if match:
-                        yield regexes.strptime(date.today(), match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
-                    else:
-                        yield None, None, line.rstrip('\r\n')
-        except GeneratorExit:
-            raise StopIteration
-        except:
-            if error_log is not None:
-                print('DEBUG] Exception reading latest.log:', file=error_log)
-                traceback.print_exc(file=error_log)
-        try:
-            for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True):
-                if not logfilename.endswith('.log.gz'):
-                    continue
-                try:
-                    with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
-                        log_bytes = logfile.read()
-                except (IOError, OSError):
-                    continue
-                for line in reversed(log_bytes.decode('utf-8').splitlines()):
-                    match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                    if match:
-                        yield regexes.strptime(logfilename[:10], match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
-                    else:
-                        yield None, None, line
-        except GeneratorExit:
-            raise StopIteration
-        except:
-            if error_log is not None:
-                print('DEBUG] Exception reading logfiles:', file=error_log)
-                traceback.print_exc(file=error_log)
-        try:
-            with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
-                for line in reversed(list(logfile)):
-                     match = re.match('(' + regexes.full_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                     if match:
-                         yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
-                     else:
-                         yield None, None, line.rstrip('\r\n')
-        except GeneratorExit:
-            raise StopIteration
-        except:
-            if error_log is not None:
-                print('DEBUG] Exception reading server.log:', file=error_log)
-                traceback.print_exc(file=error_log)
+        log_files = [os.path.join(config('paths')['server'], 'logs', 'latest.log')] + [os.path.join(config('paths')['server'], 'logs', logfilename) for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True)] + [os.path.join(config('paths')['server'], 'server.log')]
     else:
+        log_files = [os.path.join(config('paths')['server'], 'server.log')] + [os.path.join(config('paths')['server'], 'logs', logfilename) for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')))] + [os.path.join(config('paths')['server'], 'logs', 'latest.log')]
+    
+    for log_file_name in log_files:
+        if log_file_name.endswith('.log.gz'):
+            open_func = gzip.open
+        else:
+            open_func = open
         try:
-            with open(os.path.join(config('paths')['server'], 'server.log')) as logfile:
-                for line in logfile:
-                     match = re.match('(' + regexes.full_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                     if match:
-                         yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
-                     else:
-                         yield None, None, line.rstrip('\r\n')
-        except GeneratorExit:
-            raise StopIteration
-        except:
-            if error_log is not None:
-                print('DEBUG] Exception reading server.log:', file=error_log)
-                traceback.print_exc(file=error_log)
-        try:
-            for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs'))):
-                if not logfilename.endswith('.log.gz'):
-                    continue
-                try:
-                    with gzip.open(os.path.join(config('paths')['server'], 'logs', logfilename)) as logfile:
-                        log_bytes = logfile.read()
-                except:
-                    continue
-                for line in log_bytes.decode('utf-8').splitlines():
-                    match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
+            with open_func(log_file_name) as logfile:
+                for line in (reversed(list(logfile)) if reverse else logfile):
+                    match = re.match('(' + regexes.timestamp + '|' + regexes.full_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                     if match:
-                        yield regexes.strptime(logfilename[:10], match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
-                    else:
-                        yield None, None, line
-        except GeneratorExit:
-            raise StopIteration
-        except:
-            if error_log is not None:
-                print('DEBUG] Exception reading logfiles:', file=error_log)
-                traceback.print_exc(file=error_log)
-        try:
-            with open(os.path.join(config('paths')['server'], 'logs', 'latest.log')) as logfile:
-                for line in logfile:
-                    match = re.match('(' + regexes.timestamp + ') ' + regexes.prefix + ' (.*)$', line)
-                    if match:
-                        yield regexes.strptime(date.today(), match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
+                        if match.group(1).startswith('['):
+                            log_date = date.today()
+                            if re.match('\\d{4}-\\d{2}-\\d{2}', log_file_name[:10]):
+                                log_date = log_file_name[:10]
+                            yield regexes.strptime(log_date, match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
+                        else:
+                            yield datetime.strptime(match.group(1) + ' +0000', '%Y-%m-%d %H:%M:%S %z') , match.group(2), match.group(3)
                     else:
                         yield None, None, line.rstrip('\r\n')
         except GeneratorExit:
             raise StopIteration
         except:
             if error_log is not None:
-                print('DEBUG] Exception reading latest.log:', file=error_log)
+                print('DEBUG] Exception reading logs:', file=error_log)
                 traceback.print_exc(file=error_log)
 
 def online_players(retry=True, allow_exceptions=False):
@@ -379,10 +315,10 @@ def online_players(retry=True, allow_exceptions=False):
         return []
     for line in list.splitlines():
         if found:
-            match = re.match(regexes.timestamp + ' \\[Server thread/INFO\\]: (' + regexes.player + '(, ' + regexes.player + ')*)?', line)
+            match = re.match(regexes.timestamp + '|' + regexes.full_timestamp + ' \\[Server thread/INFO\\]: (' + regexes.player + '(, ' + regexes.player + ')*)?', line)
             if match:
                 return [] if match.group(1) is None else match.group(1).split(', ')
-        found = bool(re.match(regexes.timestamp + ' \\[Server thread/INFO\\]: There are [0-9]+/[0-9]+ players online:' , line))
+        found = bool(re.match(regexes.timestamp + '|' + regexes.full_timestamp + ' \\[Server thread/INFO\\]: There are [0-9]+/[0-9]+ players online:' , line))
     # no player list in return
     if allow_exceptions:
         raise ValueError('no player list found')
