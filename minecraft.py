@@ -30,6 +30,7 @@ import gzip
 import json
 import os
 import os.path
+import pwd
 import re
 import requests
 import socket
@@ -40,6 +41,8 @@ from datetime import timezone
 import urllib.parse
 
 CONFIG_FILE = '/opt/wurstmineberg/config/init-minecraft.json'
+user_not_found_error = '[!!!!] User wurstmineberg not found. You need to create this user and give them access to the server directory.'
+
 if __name__ == '__main__':
     arguments = docopt(__doc__, version='Minecraft init script ' + __version__)
     CONFIG_FILE = arguments['--config']
@@ -478,6 +481,7 @@ def start(*args, **kwargs):
         return status()
 
 def status():
+    pwd.getpwnam('wurstmineberg') # raises KeyError when user ‘wurstmineberg’ doesn't exist
     with open(os.devnull, 'a') as devnull:
         return not subprocess.call(['pgrep', '-u', 'wurstmineberg', '-f', config('service_name')], stdout=devnull)
 
@@ -702,18 +706,34 @@ def wiki_version_link(version):
 
 if __name__ == '__main__':
     if arguments['start']:
-        if start():
-            print('[ ok ] minecraft is now running.')
-        else:
-            print('[FAIL] Error! Could not start minecraft.')
+        try:
+            if start():
+                print('[ ok ] minecraft is now running.')
+            else:
+                print('[FAIL] Error! Could not start minecraft.')
+        except KeyError:
+            sys.exit(user_not_found_error)
     elif arguments['stop']:
-        if stop():
-            print('[ ok ] minecraft is stopped.')
-        else:
-            print('[FAIL] Error! minecraft could not be stopped.')
+        try:
+            if stop():
+                print('[ ok ] minecraft is stopped.')
+            else:
+                print('[FAIL] Error! minecraft could not be stopped.')
+        except KeyError:
+            sys.exit(user_not_found_error)
     elif arguments['restart']:
-        restart()
+        try:
+            if restart():
+                print('[ ok ] minecraft is new running.')
+            else:
+                print('[FAIL] Error! Could not start minecraft.')
+        except KeyError:
+            sys.exit(user_not_found_error)
     elif arguments['update']:
+        try:
+            status()
+        except KeyError:
+            sys.exit(user_not_found_error)
         if arguments['snapshot']:
             update(arguments['<snapshot-id>'], snapshot=True)
         elif arguments['VERSION']:
@@ -721,10 +741,23 @@ if __name__ == '__main__':
         else:
             update(snapshot=True)
     elif arguments['backup']:
-        backup()
+        try:
+            backup()
+        except KeyError:
+            sys.exit(user_not_found_error)
     elif arguments['status']:
-        print('[info] minecraft is ' + ('running.' if status() else 'not running.'))
+        try:
+            s = status()
+        except KeyError:
+            sys.exit(user_not_found_error)
+        else:
+            print('[info] minecraft is ' + ('running.' if s else 'not running.'))
+            if not s:
+                sys.exit(1)
     elif arguments['command']:
-        cmdlog = command(arguments['COMMAND'][0], arguments['COMMAND'][1:])
+        try:
+            cmdlog = command(arguments['COMMAND'][0], arguments['COMMAND'][1:])
+        except KeyError:
+            sys.exit(user_not_found_error)
         for line in cmdlog.splitlines():
             print(str(line))
