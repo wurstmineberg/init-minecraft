@@ -246,6 +246,57 @@ def enable_world(world_name, **kwargs):
     else:
         return True
 
+def iter_update(version=None, snapshot=False, reply=print, log_path=None):
+    """Download a different version of Minecraft and restart the server if it is running. Returns a generator where each iteration performs one step of the update process.
+
+    Optional arguments:
+    version -- If given, a version with this name will be downloaded. By default, the newest available version is downloaded.
+    snapshot -- If version is given, this specifies whether the version is a development version. If no version is given, this specifies whether the newest stable version or the newest development version should be downloaded. Defaults to False.
+    reply -- This function is called several times with a string argument representing update progress. Defaults to the built-in print function.
+    log_path -- This is passed to the stop function if the server is stopped before the update.
+    """
+    versions_json = requests.get('https://s3.amazonaws.com/Minecraft.Download/versions/versions.json').json()
+    if version is None: # try to dynamically get the latest version number from assets
+        version = versions_json['latest']['snapshot' if snapshot else 'release']
+    elif snapshot:
+        version = datetime.utcnow().strftime("%yw%V") + version
+    for version_dict in versions_json['versions']:
+        if version_dict.get('id') == version:
+            snapshot = version_dict.get('type') == 'snapshot'
+            break
+    else:
+        reply('Minecraft version not found in assets, will try downloading anyway')
+        version_dict = None
+    version_text = 'Minecraft ' + ('snapshot ' if snapshot else 'version ') + version
+    yield {
+        'version': version,
+        'is_snapshot': snapshot,
+        'version_text': version_text
+    }
+    if os.path.exists(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar')):
+        os.remove(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
+    _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar', local_filename=os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
+    if 'client_versions' in config('paths'):
+        os.makedirs(os.path.join(config('paths')['client_versions'], version), exist_ok=True)
+        _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', local_filename=os.path.join(config('paths')['client_versions'], version, version + '.jar'))
+    yield 'Download finished. Stopping server...'
+    say('Server will be upgrading to ' + version_text + ' and therefore restart')
+    time.sleep(5)
+    was_running = status()
+    stop(reply=reply, log_path=log_path)
+    yield 'Server stopped. Installing new server...'
+    if os.path.lexists(config('paths')['service']):
+        os.unlink(config('paths')['service'])
+    os.symlink(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'), config('paths')['service'])
+    if os.path.lexists(os.path.join(config('paths')['home'], 'home', 'client.jar')):
+        os.unlink(os.path.join(config('paths')['home'], 'home', 'client.jar'))
+    os.symlink(os.path.join(config('paths')['client_versions'], version, version + '.jar'), os.path.join(config('paths')['home'], 'home', 'client.jar'))
+    subprocess.call(['mapcrafter_textures.py', os.path.join(config('paths')['client_versions'], version, version + '.jar'), '/usr/local/share/mapcrafter/textures'])
+    yield 'Server updated. Restarting...'
+    if was_running:
+        start(reply=reply, start_message='Server updated. Restarting...')
+    return
+
 def last_seen(player, logins_log=None):
     if logins_log is None:
         for timestamp, _, logline in log(reverse=True):
@@ -462,39 +513,13 @@ def update(version=None, snapshot=False, reply=print, log_path=None):
     reply -- This function is called several times with a string argument representing update progress. Defaults to the built-in print function.
     log_path -- This is passed to the stop function if the server is stopped before the update.
     """
-    versions_json = requests.get('https://s3.amazonaws.com/Minecraft.Download/versions/versions.json').json()
-    if version is None: # try to dynamically get the latest version number from assets
-        version = versions_json['latest']['snapshot' if snapshot else 'release']
-    elif snapshot:
-        version = datetime.utcnow().strftime("%yw%V") + version
-    for version_dict in versions_json['versions']:
-        if version_dict.get('id') == version:
-            snapshot = version_dict.get('type') == 'snapshot'
-            break
-    else:
-        reply('Minecraft version not found in assets, will try downloading anyway')
-        version_dict = None
-    version_text = 'Minecraft ' + ('snapshot ' if snapshot else 'version ') + version
-    reply('Downloading ' + version_text)
-    if os.path.exists(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar')):
-        os.remove(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
-    _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/minecraft_server.' + version + '.jar', local_filename=os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'))
-    if 'client_versions' in config('paths'):
-        os.makedirs(os.path.join(config('paths')['client_versions'], version), exist_ok=True)
-        _download('https://s3.amazonaws.com/Minecraft.Download/versions/' + version + '/' + version + '.jar', local_filename=os.path.join(config('paths')['client_versions'], version, version + '.jar'))
-    say('Server will be upgrading to ' + version_text + ' and therefore restart')
-    time.sleep(5)
-    was_running = status()
-    stop(reply=reply, log_path=log_path)
-    if os.path.lexists(config('paths')['service']):
-        os.unlink(config('paths')['service'])
-    os.symlink(os.path.join(config('paths')['jar'], 'minecraft_server.' + version + '.jar'), config('paths')['service'])
-    if os.path.lexists(os.path.join(config('paths')['home'], 'home', 'client.jar')):
-        os.unlink(os.path.join(config('paths')['home'], 'home', 'client.jar'))
-    os.symlink(os.path.join(config('paths')['client_versions'], version, version + '.jar'), os.path.join(config('paths')['home'], 'home', 'client.jar'))
-    if was_running:
-        start(reply=reply, start_message='Server updated. Restarting...')
-    return version, snapshot, version_text
+    update_iterator = iter_update(version=version, snapshot=snapshot, reply=reply, log_path=log_path)
+    version_dict = next(update_iterator)
+    reply('Downloading ' + version_dict['version_text'])
+    for message in update_iterator:
+        if message != 'Server updated. Restarting...':
+            reply(message)
+    return version_dict['version'], version_dict['is_snapshot'], version_dict['version_text']
 
 def update_status(force=False):
     if force:
