@@ -295,8 +295,8 @@ def iter_update(version=None, snapshot=False, reply=print, log_path=None):
         subprocess.check_call(['mapcrafter_textures.py', os.path.join(config('paths')['client_versions'], version, version + '.jar'), '/usr/local/share/mapcrafter/textures'])
     except Exception as e:
         reply('Error while updating mapcrafter textures: ' + str(e))
-    yield 'Server updated. Restarting...'
     if was_running:
+        yield 'Server updated. Restarting...'
         start(reply=reply, start_message='Server updated. Restarting...')
     return
 
@@ -520,8 +520,7 @@ def update(version=None, snapshot=False, reply=print, log_path=None):
     version_dict = next(update_iterator)
     reply('Downloading ' + version_dict['version_text'])
     for message in update_iterator:
-        if message != 'Server updated. Restarting...':
-            reply(message)
+        reply(message)
     return version_dict['version'], version_dict['is_snapshot'], version_dict['version_text']
 
 def update_status(force=False):
