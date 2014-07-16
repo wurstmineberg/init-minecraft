@@ -291,7 +291,10 @@ def iter_update(version=None, snapshot=False, reply=print, log_path=None):
     if os.path.lexists(os.path.join(config('paths')['home'], 'home', 'client.jar')):
         os.unlink(os.path.join(config('paths')['home'], 'home', 'client.jar'))
     os.symlink(os.path.join(config('paths')['client_versions'], version, version + '.jar'), os.path.join(config('paths')['home'], 'home', 'client.jar'))
-    subprocess.call(['mapcrafter_textures.py', os.path.join(config('paths')['client_versions'], version, version + '.jar'), '/usr/local/share/mapcrafter/textures'])
+    try:
+        subprocess.check_call(['mapcrafter_textures.py', os.path.join(config('paths')['client_versions'], version, version + '.jar'), '/usr/local/share/mapcrafter/textures'])
+    except Exception as e:
+        reply('Error while updating mapcrafter textures: ' + str(e))
     yield 'Server updated. Restarting...'
     if was_running:
         start(reply=reply, start_message='Server updated. Restarting...')
