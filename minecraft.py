@@ -299,7 +299,6 @@ def iter_update(version=None, snapshot=False, reply=print, log_path=None):
     except Exception as e:
         reply('Error while updating mapcrafter textures: ' + str(e))
     if was_running:
-        yield 'Server updated. Restarting...'
         start(reply=reply, start_message='Server updated. Restarting...')
     return
 
