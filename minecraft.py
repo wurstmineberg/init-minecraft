@@ -497,7 +497,10 @@ def start(*args, **kwargs):
         reply(kwargs.get('start_message', 'starting Minecraft server...'))
         _fork(_start)
         time.sleep(7)
-        update_status()
+        if kwargs.get('log_path'):
+            with open(kwargs['log_path'], 'a') as loginslog:
+                ver = version()
+                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + (' @restart' if ver is None else ' @start ' + ver), file=loginslog) # logs in UTC
         return status()
 
 def status():
@@ -518,10 +521,9 @@ def stop(*args, **kwargs):
         time.sleep(7)
         if kwargs.get('log_path'):
             with open(kwargs['log_path'], 'a') as loginslog:
-                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ' @restart', file=loginslog) # logs in UTC
+                print(datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S') + ' @stop', file=loginslog) # logs in UTC
     else:
         reply('Minecraft server was not running.')
-    update_status()
     return not status()
 
 def tellraw(message_dict, player='@a'):
@@ -546,27 +548,6 @@ def update(version=None, snapshot=False, reply=print, log_path=None):
     for message in update_iterator:
         reply(message)
     return version_dict['version'], version_dict['is_snapshot'], version_dict['version_text']
-
-def update_status(force=False):
-    if force:
-        players = online_players()
-    else:
-        try:
-            players = online_players(allow_exceptions=True)
-        except:
-            try:
-                with open(os.path.join(config('paths')['assets'], 'status.json')) as statusjson:
-                    old_status = json.load(statusjson)
-                players = old_status['list']
-            except:
-                players = []
-    d = {
-        'list': players,
-        'on': status(),
-        'version': version()
-    }
-    with open(os.path.join(config('paths')['assets'], 'status.json'), 'w') as statusjson:
-        json.dump(d, statusjson, sort_keys=True, indent=4, separators=(',', ': '))
 
 def update_whitelist(people_file=None):
     import lazyjson
