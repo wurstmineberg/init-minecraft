@@ -1,3 +1,4 @@
 docopt>=0.6.1
 -e git://github.com/fenhl/lazyjson.git#egg=lazyjson
+more-itertools>=2.1
 requests>=2.1.0

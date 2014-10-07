@@ -26,6 +26,7 @@ from datetime import time as dtime
 import errno
 import gzip
 import json
+import more_itertools
 import os
 import os.path
 import pwd
@@ -459,9 +460,7 @@ def say(message, prefix=True):
         tellraw(message)
 
 def start(*args, **kwargs):
-    invocation = ['java', '-Xmx' + str(config('java_options')['max_heap']) + 'M', '-Xms' + str(config('java_options')['min_heap']) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(config('java_options')['cpu_count']), '-XX:+AggressiveOpts', '-Dlog4j.configurationFile=' + config('paths')['logConfig'], '-jar', config('paths')['service']] + config('java_options')['jar_options']
-    reply = kwargs.get('reply', print)
-    def _start(java_popen):
+    def feed_commands(java_popen):
         loopvar = True
         with socket.socket(socket.AF_UNIX) as s:
             if os.path.exists(config('paths')['socket']):
@@ -489,6 +488,8 @@ def start(*args, **kwargs):
         if os.path.exists(config('paths')['socket']):
             os.remove(config('paths')['socket'])
     
+    invocation = ['java', '-Xmx' + str(config('java_options')['max_heap']) + 'M', '-Xms' + str(config('java_options')['min_heap']) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(config('java_options')['cpu_count']), '-XX:+AggressiveOpts', '-Dlog4j.configurationFile=' + config('paths')['logConfig'], '-jar', config('paths')['service']] + config('java_options')['jar_options']
+    reply = kwargs.get('reply', print)
     if status():
         reply('Server is already running!')
         return False
@@ -501,8 +502,8 @@ def start(*args, **kwargs):
                 break
             if datetime.utcnow() - timestamp_at_start > kwargs.get('timeout', timedelta(seconds=config('startTimeout'))): # ...or the timeout has been exceeded.
                 break
-        java_popen.stdout.close() # we don't need stdout anymore since we have the server log
-        _fork(_start, java_popen)
+        _fork(feed_commands, java_popen) # feed commands from the socket to java
+        _fork(more_itertools.consume, java_popen.stdout) # consume java stdout to prevent deadlocking
         if kwargs.get('log_path'):
             with open(kwargs['log_path'], 'a') as loginslog:
                 ver = version()
