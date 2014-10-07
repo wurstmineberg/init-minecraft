@@ -498,7 +498,7 @@ def start(*args, **kwargs):
         for line in java_popen.stdout:
             if re.match(regexes.full_timestamp + ' [Server thread/INFO]: Done ([0-9]+.[0-9]+s)!', line.decode('utf-8')): # wait until the server has finished starting...
                 break
-            if datetime.utcnow() - timestamp_at_start > timeout: # ...or the timeout has been exceeded.
+            if datetime.utcnow() - timestamp_at_start > kwargs.get('timeout', timedelta(seconds=20)): # ...or the timeout has been exceeded.
                 break
         java_popen.stdout.close() # we don't need stdout anymore since we have the server log
         _fork(_start, java_popen)
