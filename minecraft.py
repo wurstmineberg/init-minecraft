@@ -160,7 +160,7 @@ def _download(url, local_filename=None): #FROM http://stackoverflow.com/a/166963
                 f.write(chunk)
                 f.flush()
 
-def _fork(func):
+def _fork(func, *args, **kwargs):
     #FROM http://stackoverflow.com/a/6011298/667338
     # do the UNIX double-fork magic, see Stevens' "Advanced Programming in the UNIX Environment" for details (ISBN 0201563177)
     try: 
@@ -184,7 +184,7 @@ def _fork(func):
     with open(os.path.devnull) as devnull:
         sys.stdin = devnull
         sys.stdout = devnull
-        func() # do stuff
+        func(*args, **kwargs) # do stuff
         os._exit(os.EX_OK) # all done
 
 def backup(announce=False, reply=print, path=None):
@@ -460,9 +460,7 @@ def say(message, prefix=True):
 def start(*args, **kwargs):
     invocation = ['java', '-Xmx' + str(config('java_options')['max_heap']) + 'M', '-Xms' + str(config('java_options')['min_heap']) + 'M', '-XX:+UseConcMarkSweepGC', '-XX:+CMSIncrementalMode', '-XX:+CMSIncrementalPacing', '-XX:ParallelGCThreads=' + str(config('java_options')['cpu_count']), '-XX:+AggressiveOpts', '-Dlog4j.configurationFile=' + config('paths')['logConfig'], '-jar', config('paths')['service']] + config('java_options')['jar_options']
     reply = kwargs.get('reply', print)
-    def _start(timeout=0.1):
-        with open(os.path.devnull) as devnull:
-            javapopen = subprocess.Popen(invocation, stdin=subprocess.PIPE, stdout=devnull, cwd=config('paths')['server'])
+    def _start(java_popen):
         loopvar = True
         with socket.socket(socket.AF_UNIX) as s:
             if os.path.exists(config('paths')['socket']):
@@ -481,12 +479,12 @@ def start(*args, **kwargs):
                         if line == 'stop':
                             loopvar = False
                             break
-                        javapopen.stdin.write(line.encode('utf-8') + b'\n')
+                        java_popen.stdin.write(line.encode('utf-8') + b'\n')
                     str_buffer = lines[-1]
                 c.close()
-                if javapopen.poll() is not None:
+                if java_popen.poll() is not None:
                     return
-        javapopen.communicate(input=b'stop\n')
+        java_popen.communicate(input=b'stop\n')
         if os.path.exists(config('paths')['socket']):
             os.remove(config('paths')['socket'])
     
@@ -495,8 +493,15 @@ def start(*args, **kwargs):
         return False
     else:
         reply(kwargs.get('start_message', 'starting Minecraft server...'))
-        _fork(_start)
-        time.sleep(7)
+        timestamp_at_start = datetime.utcnow()
+        java_popen = subprocess.Popen(invocation, stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=config('paths')['server']) # start the java process
+        for line in java_popen.stdout:
+            if re.match(regexes.full_timestamp + ' [Server thread/INFO]: Done ([0-9]+.[0-9]+s)!', line.decode('utf-8')): # wait until the server has finished starting...
+                break
+            if datetime.utcnow() - timestamp_at_start > timeout: # ...or the timeout has been exceeded.
+                break
+        java_popen.stdout.close() # we don't need stdout anymore since we have the server log
+        _fork(_start, java_popen)
         if kwargs.get('log_path'):
             with open(kwargs['log_path'], 'a') as loginslog:
                 ver = version()
