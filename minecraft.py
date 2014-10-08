@@ -1,6 +1,16 @@
 #!/usr/bin/env python3
 
-"""Minecraft server script for init.d.
+### BEGIN INIT INFO
+# Provides:          minecraft
+# Required-Start:    $remote_fs $network
+# Required-Stop:     $remote_fs $network
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: starts the Minecraft server
+# Description:       starts minecraft using a Python wrapper
+### END INIT INFO
+
+"""System V init script for the Minecraft server.
 
 Usage:
   minecraft [options] start | stop | backup | status | restart
