@@ -358,10 +358,9 @@ def log(reverse=False, error_log=None):
     error_log -- a file-like object where any error messages and tracebacks are directed. Defaults to None, meaning no error logging.
     """
     if reverse:
-        log_files = [os.path.join(config('paths')['server'], 'logs', 'latest.log')] + [os.path.join(config('paths')['server'], 'logs', logfilename) for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True)] + [os.path.join(config('paths')['server'], 'server.log')]
+        log_files = [os.path.join(config('paths')['server'], 'logs', logfilename) for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')), reverse=True)] + [os.path.join(config('paths')['server'], 'server.log')]
     else:
-        log_files = [os.path.join(config('paths')['server'], 'server.log')] + [os.path.join(config('paths')['server'], 'logs', logfilename) for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')))] + [os.path.join(config('paths')['server'], 'logs', 'latest.log')]
-    
+        log_files = [os.path.join(config('paths')['server'], 'server.log')] + [os.path.join(config('paths')['server'], 'logs', logfilename) for logfilename in sorted(os.listdir(os.path.join(config('paths')['server'], 'logs')))]
     for log_file_name in log_files:
         if log_file_name.endswith('.log.gz'):
             open_func = gzip.open
@@ -370,10 +369,12 @@ def log(reverse=False, error_log=None):
         try:
             with open_func(log_file_name) as logfile:
                 for line in (reversed(list(logfile)) if reverse else logfile):
+                    if not isinstance(line, str):
+                        line = line.decode('utf-8')
                     match = re.match('(' + regexes.timestamp + '|' + regexes.full_timestamp + ') ' + regexes.prefix + ' (.*)$', line)
                     if match:
                         if match.group(1).startswith('['):
-                            log_date = date.today()
+                            log_date = datetime.fromtimestamp(os.path.getmtime(log_file_name), tz=timezone(timedelta(seconds=-time.timezone))).date() # log file's last modified date
                             if re.match('\\d{4}-\\d{2}-\\d{2}', log_file_name[:10]):
                                 log_date = log_file_name[:10]
                             yield regexes.strptime(log_date, match.group(1), tzinfo=timezone(timedelta(hours=config('utc_offset')))), match.group(2), match.group(3)
