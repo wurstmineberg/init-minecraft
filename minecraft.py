@@ -636,7 +636,7 @@ def update_whitelist(people_file=None):
     for whitelist_entry in whitelist:
         for person in people['people']:
             if person.get('minecraftUUID') == whitelist_entry['uuid']:
-                if 'minecraft' in person and person['minecraft'] != whitelist_entry['name'] and person['minecraft'] not in person.get('minecraft_previous', []):
+                if 'minecraft' in person and person.get('minecraft') != whitelist_entry['name'] and person.get('minecraft') not in person.get('minecraft_previous', []):
                     if 'minecraft_previous' in person:
                         person['minecraft_previous'].append(person['minecraft'])
                     else:
