@@ -505,12 +505,9 @@ def start(*args, **kwargs):
         reply('Server is already running!')
         return False
     reply(kwargs.get('start_message', 'starting Minecraft server...'))
-    timestamp_at_start = datetime.utcnow()
     java_popen = subprocess.Popen(invocation, stdin=subprocess.PIPE, stdout=subprocess.PIPE, cwd=config('paths')['server']) # start the java process
-    for line in java_popen.stdout:
-        if re.match(regexes.full_timestamp + ' [Server thread/INFO]: Done \\([0-9]+.[0-9]+s\\)!', line.decode('utf-8')): # wait until the server has finished starting...
-            break
-        if datetime.utcnow() - timestamp_at_start > kwargs.get('timeout', timedelta(seconds=config('startTimeout'))): # ...or the timeout has been exceeded.
+    for line in loops.timeout_total(java_popen.stdout, timedelta(seconds=config('startTimeout'))): # wait until the timeout has been exceeded...
+        if re.match(regexes.full_timestamp + ' [Server thread/INFO]: Done \\([0-9]+.[0-9]+s\\)!', line.decode('utf-8')): # ...or the server has finished starting
             break
     _fork(feed_commands, java_popen) # feed commands from the socket to java
     _fork(more_itertools.consume, java_popen.stdout) # consume java stdout to prevent deadlocking
